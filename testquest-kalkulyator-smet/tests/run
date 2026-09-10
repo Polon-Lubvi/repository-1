@@ -1,0 +1,449 @@
+#!/usr/bin/env node
+/*
+ * Автотесты раздела «Калькулятор смет» TestQuest.
+ * Рантайм: Node.js 18+ (встроенный fetch), без внешних зависимостей.
+ * Файл без расширения — запускается как `node tests/run` (CommonJS).
+ *
+ *   BASE_URL=https://testquest.pryaniky.com node tests/run
+ *
+ * Код выхода: 0 = PASSED, 1 = FAILED, 2 = ошибка окружения.
+ */
+"use strict";
+
+const BASE_URL = (process.env.BASE_URL || "https://testquest.pryaniky.com").replace(/\/+$/, "");
+const NO_COLOR = process.env.NO_COLOR || !process.stdout.isTTY;
+const g = (s) => (NO_COLOR ? s : `\x1b[32m${s}\x1b[0m`);
+const r = (s) => (NO_COLOR ? s : `\x1b[31m${s}\x1b[0m`);
+const bld = (s) => (NO_COLOR ? s : `\x1b[1m${s}\x1b[0m`);
+
+// ---------------------------------------------------------------------------
+// Загрузка ресурсов стенда (с кэшем в рамках прогона)
+// ---------------------------------------------------------------------------
+const cache = new Map();
+async function fetchText(path) {
+  if (cache.has(path)) return cache.get(path);
+  const url = path.startsWith("http") ? path : BASE_URL + path;
+  const res = await fetch(url, { headers: { "User-Agent": "TestQuest-QA-kit/1.0" } });
+  if (!res.ok) throw new Error(`HTTP ${res.status} для ${url}`);
+  const txt = await res.text();
+  cache.set(path, txt);
+  return txt;
+}
+const js = (name) => fetchText(`/js/${name}.js`);
+const html = () => fetchText("/");
+
+// ---------------------------------------------------------------------------
+// Разбор констант из js/data.js
+// ---------------------------------------------------------------------------
+async function dataConstants() {
+  if (cache.has("consts")) return cache.get("consts");
+  const src = await js("data");
+
+  const baseValues = [];
+  for (const m of src.match(/baseValues\s*:\s*\[(.*?)\]/s)[1].matchAll(
+    /variant\s*:\s*(\d+)\s*,\s*baseCloudPrice\s*:\s*([\d.]+)\s*,\s*baseYearSupportFee\s*:\s*([\d.]+)/g
+  )) baseValues.push({ variant: +m[1], baseCloudPrice: +m[2], baseYearSupportFee: +m[3] });
+
+  const priceDivisors = [];
+  for (const m of src.match(/priceDivisors\s*:\s*\[(.*?)\]/s)[1].matchAll(
+    /PriceTag\s*:\s*(\d+)\s*,\s*Divisor\s*:\s*([\d.]+)/g
+  )) priceDivisors.push({ tag: +m[1], divisor: +m[2] });
+
+  const termDiscounts = [];
+  for (const m of src.match(/termDiscounts\s*:\s*\[(.*?)\]/s)[1].matchAll(
+    /minTerm\s*:\s*(\d+)\s*,\s*discount\s*:\s*([\d.]+)/g
+  )) termDiscounts.push({ minTerm: +m[1], discount: +m[2] });
+
+  const tmRate = +src.match(/TM_HOURLY_RATE\s*:\s*(\d+)/)[1];
+  const tmHours = +src.match(/TM_DEFAULT_HOURS\s*:\s*(\d+)/)[1];
+
+  const managers = [];
+  for (const m of src.match(/KP_MANAGERS\s*:\s*\[(.*?)\]\s*,\s*MODULE_GROUPS/s)[1].matchAll(
+    /id:\s*'([^']+)'\s*,\s*name:\s*'([^']+)'\s*,\s*phone:\s*'([^']+)'\s*,\s*email:\s*'([^']+)'/g
+  )) managers.push({ id: m[1], name: m[2], phone: m[3], email: m[4] });
+
+  const moduleGroups = [];
+  const gblock = src.match(/MODULE_GROUPS\s*:\s*\[(.*)\]\s*,?\s*\};/s)[1];
+  for (const gm of gblock.matchAll(
+    /\{\s*id:\s*'([^']+)',\s*title:\s*'([^']*)',\s*coefAdd:\s*([\d.]+),\s*modules:\s*\[(.*?)\]\s*,?\s*\}/gs
+  )) {
+    const mods = [];
+    for (const mm of gm[4].matchAll(/\{([^}]*)\}/g)) {
+      const body = mm[1];
+      mods.push({
+        id: body.match(/id:\s*'([^']+)'/)[1],
+        mandatory: /mandatory:\s*true/.test(body),
+        coefAdd: body.match(/coefAdd:\s*([\d.]+)/) ? +body.match(/coefAdd:\s*([\d.]+)/)[1] : null,
+      });
+    }
+    moduleGroups.push({ id: gm[1], title: gm[2], coefAdd: +gm[3], modules: mods });
+  }
+
+  const presets = [];
+  const iblock = src.match(/IMPLEMENTATION_PRESET_GROUPS\s*:\s*\[(.*?)\]\s*,\s*KP_MANAGERS/s)[1];
+  for (const it of iblock.matchAll(/\{\s*id:\s*'([^']+)',\s*label:\s*'((?:[^'\\]|\\.)*)'(.*?)\}/gs)) {
+    const tail = it[3];
+    presets.push({
+      id: it[1],
+      label: it[2],
+      pricing: (tail.match(/pricing:\s*'([^']+)'/) || [, "custom"])[1],
+      defaultPrice: tail.match(/defaultPrice:\s*(\d+)/) ? +tail.match(/defaultPrice:\s*(\d+)/)[1] : null,
+      onPremOnly: /onPremOnly:\s*true/.test(tail),
+    });
+  }
+
+  const out = { baseValues, priceDivisors, termDiscounts, tmRate, tmHours, managers, moduleGroups, presets };
+  cache.set("consts", out);
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Порт движка ценообразования (js/calc.js), сверен со стендом
+// ---------------------------------------------------------------------------
+const TARIFF_CLOUD = 0;
+const TARIFF_BOX = 1;
+
+function termDiscount(term, td) {
+  const ap = td.filter((d) => d.minTerm <= term).map((d) => d.discount);
+  return ap.length ? 1 - Math.max(...ap) / 100 : 1;
+}
+
+function calcLicenses(tariff, licenceCount, termMonths, coefficient, k, variant) {
+  coefficient = coefficient == null ? 1 : coefficient;
+  variant = variant || 0;
+  const divisors = k.priceDivisors.map((d) => d.divisor);
+  const baseRow = k.baseValues.find((b) => b.variant === variant);
+  if ((termMonths === 0 || licenceCount === 0) && tariff === TARIFF_CLOUD) return 0;
+
+  const calcTerm = tariff === TARIFF_BOX ? 24 : termMonths;
+  const discount = termDiscount(calcTerm, k.termDiscounts);
+  const tail = licenceCount % 100;
+  const rows = Array((licenceCount - tail) / 100).fill(100).concat([tail]);
+  const basePrice = baseRow.baseCloudPrice * coefficient;
+  const supportFee = baseRow.baseYearSupportFee;
+
+  let cur = 0, monthSum = 0;
+  rows.forEach((cnt, i) => {
+    cur += 100;
+    const dc = i < divisors.length ? 1 / Math.sqrt(divisors[i]) : 1 / Math.sqrt(cur / 100);
+    monthSum += basePrice * dc * cnt;
+  });
+
+  let total = monthSum * calcTerm * discount;
+  if (tariff === TARIFF_BOX) {
+    const magisterBase = total / (1 + supportFee / 100);
+    const supportYears = termMonths ? Math.ceil(termMonths / 12) : 0;
+    let sc = 1;
+    if (supportYears > 1) sc = 1 + (supportFee / 100) * (supportYears - 1);
+    total = magisterBase * sc;
+  }
+  return Math.round(total);
+}
+
+function modulesCoefficient(selectedIds, giftIds, k) {
+  const gift = new Set(giftIds || []);
+  let adds = 0;
+  for (const grp of k.moduleGroups)
+    for (const m of grp.modules)
+      if (selectedIds.includes(m.id) && !gift.has(m.id) && !m.mandatory)
+        adds += m.coefAdd != null ? m.coefAdd : grp.coefAdd;
+  return Math.round((1 + adds) * 100) / 100;
+}
+
+function implGross(net, vatRate) {
+  vatRate = vatRate == null ? 5 : vatRate;
+  net = Math.round(net);
+  const vat = Math.round((net * vatRate) / 100);
+  return { net, vat, gross: net + vat };
+}
+
+const tmAmount = (hours, k) => hours * k.tmRate;
+const fmtRub = (v) => new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(Math.round(v));
+const normWs = (t) => String(t).replace(/[\s   ]+/g, " ").trim();
+
+// ---------------------------------------------------------------------------
+// Мини-ассерты
+// ---------------------------------------------------------------------------
+class Checks {
+  constructor() { this.items = []; }
+  ok(name, cond, info) { this.items.push({ name, ok: !!cond, info: info || "" }); }
+  eq(name, a, e, info) {
+    const good = JSON.stringify(a) === JSON.stringify(e);
+    this.items.push({ name, ok: good, info: info || (good ? JSON.stringify(a) : `получено ${JSON.stringify(a)}, ожидалось ${JSON.stringify(e)}`) });
+  }
+  near(name, a, e, tol, info) {
+    tol = tol == null ? 1 : tol;
+    this.items.push({ name, ok: Math.abs(a - e) <= tol, info: info || `${a} ~ ${e} (±${tol})` });
+  }
+  has(name, hay, needle, info) {
+    const good = hay.includes(needle);
+    this.items.push({ name, ok: good, info: info || (good ? `нашли ${JSON.stringify(needle)}` : `НЕ нашли ${JSON.stringify(needle)}`) });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Блоки тестов (кейсы TESTCASES.md)
+// ---------------------------------------------------------------------------
+const BLOCKS = [
+  ["TC-01/14 · Мета-КП и навигация", async (c) => {
+    const k = await dataConstants();
+    const page = await html();
+    const app = await js("app");
+    const nav = await js("nav");
+    const exp = [
+      ["lyubko", "Любко Евгения", "89265826505", "es@pryaniky.com"],
+      ["tsikin", "Цыкин Алексей", "89919781154", "ats@pryaniky.ru"],
+      ["savin", "Савин Марк", "89264844907", "mas@pryaniky.ru"],
+    ];
+    c.eq("Менеджеров КП ровно 3", k.managers.length, 3);
+    for (const e of exp) {
+      const m = k.managers.find((x) => x.id === e[0]);
+      c.ok(`Менеджер ${e[1]} / ${e[2]} / ${e[3]}`, m && m.name === e[1] && m.phone === e[2] && m.email === e[3]);
+    }
+    c.ok("Первый менеджер выбран по умолчанию", /if \(index === 0\)\s*\{\s*option\.selected = true/.test(app));
+    c.has("Дата выставления КП = сегодня", app, "getElementById('kpIssueDate').value = formatDateForInput(today)");
+    c.has("КП действительно до = +3 месяца", app, "addMonths(today, 3)");
+    for (const id of ["companyName", "projectName", "kpManager", "kpIssueDate", "kpValidUntil"])
+      c.has(`Поле #${id} есть в разметке`, page, `id="${id}"`);
+    for (const p of ["assignment", "calculator", "invoices", "acts", "contracts", "client-contracts"])
+      c.ok(`Раздел меню data-page=${p}`, page.includes(`data-page="${p}"`));
+    c.has("По умолчанию открыт раздел «Задание»", nav, "switchPage('assignment')");
+    c.has("Заголовок раздела калькулятора", nav, "title: 'Калькулятор смет'");
+  }],
+
+  ["TC-02/03 · Тарифы Облако / Коробка", async (c) => {
+    const k = await dataConstants();
+    const page = await html();
+    const calc = await js("calc");
+    c.has("Чекбокс тарифа «Облако»", page, 'id="tariff-cloud"');
+    c.has("Чекбокс тарифа «Коробка»", page, 'id="tariff-onprem"');
+    c.eq("Облако 100 лиц · 12 мес = 200 429 ₽", calcLicenses(0, 100, 12, 1, k), 200429);
+    c.ok("Облако 100·12 форматируется с разбивкой разрядов '200 429'", normWs(fmtRub(calcLicenses(0, 100, 12, 1, k))).includes("200 429"), normWs(fmtRub(200429)));
+    c.eq("Облако 200 лиц · 12 мес = 400 858 ₽", calcLicenses(0, 200, 12, 1, k), 400858);
+    c.has("Коробка: срок расчёта фиксируется 24 мес", calc.replace(/ /g, ""), "calcTerm=24");
+    c.has("Коробка: применяется supportFee", calc, "supportFee");
+    c.eq("Коробка 100 лиц · 12 мес = 308 352 ₽", calcLicenses(1, 100, 12, 1, k), 308352);
+    c.eq("Коробка 100 лиц · 24 мес = 400 858 ₽", calcLicenses(1, 100, 24, 1, k), 400858);
+    c.eq("Коробка 100 лиц · 36 мес = 493 363 ₽", calcLicenses(1, 100, 36, 1, k), 493363);
+    c.ok("Коробка дороже облака (12 мес)", calcLicenses(1, 100, 12, 1, k) > calcLicenses(0, 100, 12, 1, k));
+    c.has("Нельзя снять оба тарифа", await js("app"), "cloud.checked = true");
+  }],
+
+  ["TC-04/05 · Кол-во лицензий и срок", async (c) => {
+    const k = await dataConstants();
+    const page = await html();
+    c.has("Поле «Число лицензий»", page, 'id="licenceCount"');
+    c.has("Поле «Срок, мес»", page, 'id="termMonths"');
+    c.eq("Дивизоры как в data.js", k.priceDivisors.map((d) => d.divisor), [1, 1, 1.5, 1.5, 1.5, 2, 3, 4, 5]);
+    c.eq("Облако 100·12 = 200 429 ₽", calcLicenses(0, 100, 12, 1, k), 200429);
+    c.eq("Облако 300·12 = 564 507 ₽ (дивизор 1.5)", calcLicenses(0, 300, 12, 1, k), 564507);
+    c.eq("Облако 500·12 = 891 806 ₽", calcLicenses(0, 500, 12, 1, k), 891806);
+    c.ok("Удельная цена падает с объёмом", calcLicenses(0, 500, 12, 1, k) / 500 < calcLicenses(0, 100, 12, 1, k) / 100);
+    c.ok("Хвост < 100 тарифицируется (250 > 200)", calcLicenses(0, 250, 12, 1, k) > calcLicenses(0, 200, 12, 1, k));
+    c.eq("Пороги скидок", k.termDiscounts, [{ minTerm: 6, discount: 10 }, { minTerm: 12, discount: 20 }]);
+    c.eq("Срок 3 мес: без скидки — 62 634 ₽", calcLicenses(0, 100, 3, 1, k), 62634);
+    c.eq("Срок 6 мес: -10% — 112 741 ₽", calcLicenses(0, 100, 6, 1, k), 112741);
+    c.eq("Срок 12 мес: -20% — 200 429 ₽", calcLicenses(0, 100, 12, 1, k), 200429);
+    c.ok("Цена за месяц при 3 мес > при 12 мес", calcLicenses(0, 100, 3, 1, k) / 3 > calcLicenses(0, 100, 12, 1, k) / 12);
+    c.eq("Облако: 0 лицензий -> 0 ₽", calcLicenses(0, 0, 12, 1, k), 0);
+    c.eq("Облако: 0 месяцев -> 0 ₽", calcLicenses(0, 100, 0, 1, k), 0);
+  }],
+
+  ["TC-06/07 · Модули и подарки", async (c) => {
+    const k = await dataConstants();
+    const app = await js("app");
+    const G = Object.fromEntries(k.moduleGroups.map((x) => [x.id, x]));
+    c.eq("Базовая: coefAdd 0", G.base.coefAdd, 0);
+    c.eq("Ключевые: coefAdd 0.2", G.extended.coefAdd, 0.2);
+    c.eq("Дополнительные: coefAdd 0.1", G.other.coefAdd, 0.1);
+    c.eq("Планируются: coefAdd 0.2", G.planned.coefAdd, 0.2);
+    c.eq("«Мессенджер» coefAdd 0.3", G.extended.modules.find((m) => m.id === "messenger").coefAdd, 0.3);
+    c.ok("4 базовых модуля обязательные", G.base.modules.every((m) => m.mandatory));
+    c.eq("Коэф. без доп. модулей = 1.0", modulesCoefficient([], [], k), 1);
+    c.eq("+ключевой -> 1.2", modulesCoefficient(["process-builder"], [], k), 1.2);
+    c.eq("+доп. -> 1.1", modulesCoefficient(["tasks"], [], k), 1.1);
+    c.eq("+Мессенджер -> 1.3", modulesCoefficient(["messenger"], [], k), 1.3);
+    c.eq("ключевой+доп.+мессенджер -> 1.6", modulesCoefficient(["process-builder", "tasks", "messenger"], [], k), 1.6);
+    c.has("#coefficient только для чтения (disabled)", app, "coefInput.disabled = true");
+    c.near("Коэф. 1.3 повышает цену в 1.3 раза", calcLicenses(0, 100, 12, 1.3, k), calcLicenses(0, 100, 12, 1, k) * 1.3, 2);
+    c.eq("Подарок не входит в коэффициент (1.0)", modulesCoefficient(["messenger"], ["messenger"], k), 1);
+    c.eq("Из двух модулей подарочный не считается (1.2)", modulesCoefficient(["process-builder", "messenger"], ["messenger"], k), 1.2);
+    c.has("В UI подарочная цена «в подарок»", app, "'в подарок'");
+    c.has("Кнопка «В подарок» — вне базы и не для обязательных", app, "!module.mandatory && groupId !== 'base'");
+  }],
+
+  ["TC-08/09 · Внедрение и Time&Material", async (c) => {
+    const k = await dataConstants();
+    const page = await html();
+    const app = await js("app");
+    const exp = await js("exportEstimate");
+    const P = Object.fromEntries(k.presets.map((p) => [p.id, p]));
+    c.ok("Пресетов внедрения >= 15", k.presets.length >= 15, `их ${k.presets.length}`);
+    c.eq("«ТЗ» — фикс 117 000 ₽", [P["tech-spec"].pricing, P["tech-spec"].defaultPrice], ["fixed", 117000]);
+    c.eq("«Приёмочные тесты» — 58 500 ₽", P["acceptance-tests"].defaultPrice, 58500);
+    c.eq("«Синхронизация (1 источник)» — 187 200 ₽", P["user-sync-single"].defaultPrice, 187200);
+    c.ok("«Проверки ИБ» — T&M", P["ib-review"].pricing === "tm");
+    c.ok("«Портал по ТЗ» — free", P["portal-tz"].pricing === "free");
+    for (const id of ["deploy-arch", "test-env", "prod-migration"])
+      c.ok(`Пресет «${id}» — onPremOnly`, P[id].onPremOnly);
+    c.has("Облачная смета исключает on-premise строки", app.replace(/ /g, ""), "isImplementationOnPremOnly");
+    c.has("НДС по умолчанию для внедрения = 5%", app, "DEFAULT_IMPLEMENTATION_VAT = 5");
+    c.eq("ТЗ 117 000 + НДС 5% = 5 850 ₽ НДС", implGross(117000, 5).vat, 5850);
+    c.eq("ТЗ 117 000 с НДС = 122 850 ₽", implGross(117000, 5).gross, 122850);
+    c.has("Строки T&M — метка «T&M»", app, "IMPLEMENTATION_TM_LABEL = 'T&M'");
+    c.has("Панель «Внедрение»", page, 'id="implementation-presets"');
+    c.eq("Ставка T&M = 5 850 ₽/чч", k.tmRate, 5850);
+    c.eq("Резерв по умолчанию = 100 чч", k.tmHours, 100);
+    c.eq("Резерв 100 чч = 585 000 ₽", tmAmount(100, k), 585000);
+    c.eq("Резерв 50 чч = 292 500 ₽", tmAmount(50, k), 292500);
+    c.eq("Резерв 0 чч = 0 ₽", tmAmount(0, k), 0);
+    c.has("Поле «Часы Time&Material»", page, 'id="tmHours"');
+    c.eq("T&M 585 000 + НДС 5% = 614 250 ₽", implGross(tmAmount(100, k), 5).gross, 614250);
+    c.has("В exportEstimate T&M с НДС 5%", exp.replace(/ /g, ""), "net*0.05");
+  }],
+
+  ["TC-10 · ИТОГО (агрегатор сметы)", async (c) => {
+    const k = await dataConstants();
+    const app = await js("app");
+    const exp = await js("exportEstimate");
+    const lic = calcLicenses(0, 300, 12, modulesCoefficient(["messenger"], [], k), k);
+    c.near("Лицензии 300·12·коэф 1.3", lic, calcLicenses(0, 300, 12, 1, k) * 1.3, 3);
+    const disc = lic * 0.9;
+    const ig = [117000, 58500].reduce((s, n) => s + implGross(n, 5).gross, 0);
+    c.eq("Внедрение (117 000 + 58 500) с НДС 5% = 184 275 ₽", ig, 184275);
+    c.ok("ИТОГО больше лицензий со скидкой", disc + ig > disc);
+    c.has("grandTotal = totalAfterDiscount + implementationTotals.gross", app.replace(/ /g, ""), "grandTotal=totalAfterDiscount+implementationTotals.gross");
+    c.has("Строка «Всего» — класс total final", app, "'total final'");
+    c.has("Строка «Скидка N %» только при discount > 0", app, "if (discountPct > 0)");
+    c.has("Отдельный блок T&M со своим итогом", app, "renderTmEstimate");
+    c.has("Имя файла Excel по маске «КП по реализации проекта …»", exp, "КП по реализации проекта");
+  }],
+
+  ["TC-11 · Выгрузка сметы в Excel", async (c) => {
+    const page = await html();
+    const app = await js("app");
+    const exp = await js("exportEstimate");
+    c.has("Кнопка «Выгрузить смету в Excel»", page, 'id="export-btn"');
+    c.has("Клик вызывает onExportExcel", app, "getElementById('export-btn').addEventListener('click', onExportExcel)");
+    c.has("Экспорт формирует .xlsx", exp, "spreadsheetml.sheet");
+    c.has("Файл скачивается через <a download>", exp, "link.download = filename");
+    c.ok("Подключён ExcelJS", page.toLowerCase().includes("exceljs"));
+    c.ok("Подключён JSZip", page.toLowerCase().includes("jszip"));
+    const tpl = await js("kp-template-base64");
+    const m = tpl.match(/KP_TEMPLATE_BASE64\s*=\s*['"]([A-Za-z0-9+/=]+)['"]/);
+    c.ok("Есть KP_TEMPLATE_BASE64", !!m);
+    if (m) {
+      const raw = Buffer.from(m[1], "base64");
+      c.ok("Шаблон начинается с сигнатуры ZIP (PK 03 04)", raw[0] === 0x50 && raw[1] === 0x4b && raw[2] === 0x03 && raw[3] === 0x04);
+      const bin = raw.toString("latin1");
+      c.ok("В шаблоне есть [Content_Types].xml", bin.includes("[Content_Types].xml"));
+      c.ok("В шаблоне есть xl/workbook.xml", bin.includes("xl/workbook.xml"));
+      c.ok("В шаблоне есть лист xl/worksheets/sheet", bin.includes("xl/worksheets/sheet"));
+      c.ok("В шаблоне есть медиа xl/media/", bin.includes("xl/media/"));
+    }
+    c.has("Подставленные значения красятся зелёным (FF00B050)", exp, "FF00B050");
+    c.has("Легенда: «подставленные из сметы»", page, "подставленные из сметы");
+    c.has("Легенда: «провалидировать»", page, "провалидировать");
+    c.has("Без тарифа — ошибка «Выберите тариф для выгрузки сметы»", exp, "Выберите тариф для выгрузки сметы");
+  }],
+
+  ["TC-12 · Валидация", async (c) => {
+    const k = await dataConstants();
+    const [invoice, act, contract, fv, app, calc, page] = await Promise.all([
+      js("invoice"), js("act"), js("contract"), js("formValidation"), js("app"), js("calc"), html(),
+    ]);
+    c.has("Есть модуль подсветки ошибок форм", fv, "applyFormValidation");
+    c.has("Класс невалидного поля param-input--invalid", fv, "param-input--invalid");
+    c.has("Счёт: требуется номер счёта", invoice, "Укажите номер счёта");
+    c.has("Счёт: требуется дата счёта", invoice, "Укажите дату счёта");
+    c.has("Счёт: ИНН 10 или 12 цифр", invoice, "10 или 12 цифр");
+    c.ok("Счёт: регэксп ИНН в коде", /\\d\{10\}/.test(invoice) && /\\d\{12\}/.test(invoice));
+    c.has("Счёт: требуется юр. название", invoice, "Укажите юридическое название заказчика");
+    c.has("Акт: требуется номер акта", act, "Укажите номер акта");
+    c.has("Акт: требуется дата акта", act, "Укажите дату акта");
+    c.has("Акт: требуются реквизиты заказчика", act, "Укажите реквизиты заказчика");
+    c.has("Акт: выбор типа (работы / передача прав)", page, 'value="rights"');
+    c.has("Договор: требуется номер договора", contract, "Укажите номер договора");
+    c.has("Договор: требуется дата договора", contract, "Укажите дату договора");
+    c.has("Договор: требуется размер пакета лицензий", contract, "Укажите размер пакета лицензий");
+    c.has("Договор: требуется стоимость пакета лицензий", contract, "Укажите стоимость пакета лицензий");
+    c.eq("Облако: 0 лицензий -> 0 ₽", calcLicenses(0, 0, 12, 1, k), 0);
+    c.eq("Облако: срок 0 мес -> 0 ₽", calcLicenses(0, 100, 0, 1, k), 0);
+    c.has("В calc.js защита (term==0 || licenceCount==0) для Облака", calc.replace(/ /g, ""), "termMonths===0||licenceCount===0");
+    c.has("Числовые поля чистятся от нецифровых символов", app, "replace(/\\D/g, '')");
+    c.has("BUG-4: «К-т роста г/г» без валидации (getGrowthCoefficient)", app, "getGrowthCoefficient");
+    c.eq("BUG-4 следствие: коэф. роста 0 обнуляет смету", calcLicenses(0, 100, 12, 0, k), 0);
+    const metaGuard = ["Укажите компанию", "Заполните название компании"].some((s) => app.includes(s));
+    c.ok("BUG-1 канарейка: экспорт Excel не валидирует мета-поля КП", !metaGuard, "нет валидации мета-полей — см. TESTCASES.md");
+  }],
+
+  ["TC-13/14 · Разметка и интеграция разделов", async (c) => {
+    const k = await dataConstants();
+    const page = await html();
+    const mp = await js("modulesPicker");
+    const contract = await js("contract");
+    for (const t of ["modules", "implementation", "tm"]) c.ok(`Вкладка data-tab=${t}`, page.includes(`data-tab="${t}"`));
+    for (const id of ["licenceCount", "termMonths", "coefficient", "coefficientGrowth", "discountPercent", "tmHours", "modules-container", "implementation-presets", "implementation-rows", "export-btn"])
+      c.has(`Элемент #${id}`, page, `id="${id}"`);
+    c.has("Общий компонент выбора модулей и в договоре", mp, "initModulesPicker");
+    c.has("В договоре модули «как в калькуляторе»", page, "как в калькуляторе");
+    const all = k.moduleGroups.flatMap((grp) => grp.modules.map((m) => m.id));
+    c.ok("Всего модулей в каталоге = 23", all.length === 23, `их ${all.length}`);
+    for (const pair of [['data-page="invoices"', "Раздел «Счета»"], ['data-page="acts"', "Раздел «Акты»"], ['data-page="contracts"', "Раздел «Договоры»"], ['data-page="client-contracts"', "Раздел «Договоры по форме клиента»"]])
+      c.has(pair[1], page, pair[0]);
+    c.has("Счёт: кнопка «Сформировать счёт»", page, "Сформировать счёт");
+    c.has("Акт: кнопка «Сформировать акт»", page, "Сформировать акт");
+    c.has("Договор: кнопка «Сформировать договор»", page, "Сформировать договор");
+    c.ok("Договор различает тип продукта (SAAS/on-premise)", contract.toLowerCase().includes("saas") && contract.toLowerCase().includes("producttype"));
+    c.has("В разметке договора тариф «Джедаи»", page, "Джедаи");
+    c.has("В разметке договора тариф «Магистры»", page, "Магистр");
+    c.has("Калькулятор оперирует ПО «Бублики»", await js("app"), "ПО «Бублики»");
+  }],
+];
+
+// ---------------------------------------------------------------------------
+async function main() {
+  console.log(bld("== TestQuest / Калькулятор смет — прогон автотестов =="));
+  console.log("BASE_URL = " + BASE_URL);
+  console.log("Node     = " + process.version);
+  try {
+    await html();
+    await js("data");
+  } catch (e) {
+    console.log(r("НЕ УДАЛОСЬ ОБРАТИТЬСЯ К СТЕНДУ: " + e.message));
+    console.log("\nИТОГ: FAILED (стенд недоступен, код выхода 2)");
+    process.exit(2);
+  }
+
+  const t0 = Date.now();
+  let totalOk = 0, totalFail = 0;
+  const summary = [];
+
+  for (const entry of BLOCKS) {
+    const name = entry[0], fn = entry[1];
+    const c = new Checks();
+    try { await fn(c); }
+    catch (e) { c.ok("Блок выполнен без исключений", false, e && e.message); }
+    const bo = c.items.filter((x) => x.ok).length;
+    const bf = c.items.length - bo;
+    totalOk += bo; totalFail += bf;
+    summary.push([name, bo, bf]);
+    console.log(`\n${bld("### " + name)}  [${bf === 0 ? g("OK") : r("ПАДЕНИЕ")}]  (${bo}/${bo + bf})`);
+    for (const x of c.items)
+      console.log(`  ${x.ok ? g("PASS") : r("FAIL")}  ${x.name}${x.info ? "  — " + x.info : ""}`);
+  }
+
+  console.log("\n" + bld("== Итоги по блокам =="));
+  for (const s of summary)
+    console.log(`  ${s[2] === 0 ? g("OK    ") : r("FAILED")}  ${String(s[0]).padEnd(42)} ${s[1]} pass / ${s[2]} fail`);
+
+  const verdict = totalFail === 0 ? "PASSED" : "FAILED";
+  console.log(`\n${bld(totalFail === 0 ? g(verdict) : r(verdict))}  —  ${totalOk + totalFail} проверок, ${totalOk} успешно, ${totalFail} провалено, ${((Date.now() - t0) / 1000).toFixed(1)} c`);
+  console.log("ИТОГ: " + verdict);
+  process.exit(totalFail === 0 ? 0 : 1);
+}
+
+main().catch((e) => {
+  console.log(r("ФАТАЛЬНАЯ ОШИБКА: " + (e && e.stack || e)));
+  process.exit(2);
+});
