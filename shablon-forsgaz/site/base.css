@@ -58,20 +58,20 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; }
 .btn:active { transform: translateY(1px); }
 .btn svg { transition: transform .2s ease; }
 
-/* Главная кнопка: в покое сдержанная тёмно-красная,
-   на ховере заливается ярким красным. */
+/* Главная кнопка: в покое сдержанная тёмно-синяя,
+   на ховере заливается ярким синим. */
 .btn--cta {
   background: var(--accent-deep);
   color: #fff;
-  border: 1px solid #7a1d19;
+  border: 1px solid #1d4d8c;
 }
 .btn--cta:hover,
 .btn--cta:focus-visible {
   background: var(--accent-hot);
-  border-color: #ff7a72;
+  border-color: #6fa8ff;
   color: #fff;
   text-shadow: 0 0 16px rgba(255, 255, 255, .85), 0 0 34px rgba(255, 255, 255, .4);
-  box-shadow: 0 0 26px -4px rgba(255, 42, 32, .75);
+  box-shadow: 0 0 26px -4px rgba(47, 111, 237, .75);
 }
 .btn--cta:hover svg,
 .btn--cta:focus-visible svg {
@@ -84,16 +84,16 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; }
 /* Кнопка в шапке: в покое приглушённая, при наведении загорается. */
 .btn--soft {
   background: var(--accent-deep);
-  border: 1px solid #7a1d19;
+  border: 1px solid #1d4d8c;
   color: #fff;
 }
 .btn--soft:hover,
 .btn--soft:focus-visible {
   background: var(--accent-hot);
-  border-color: #ff7a72;
+  border-color: #6fa8ff;
   color: #fff;
   text-shadow: 0 0 14px rgba(255, 255, 255, .8);
-  box-shadow: 0 0 22px -4px rgba(255, 42, 32, .8);
+  box-shadow: 0 0 22px -4px rgba(47, 111, 237, .8);
 }
 
 /* Ссылка без номера телефона: выглядит как обычная кнопка,
@@ -122,18 +122,18 @@ a[data-no-phone] { cursor: default; }
 @media (hover: none), (pointer: coarse) {
   .btn--cta {
     background: var(--accent-hot);
-    border-color: #ff7a72;
+    border-color: #6fa8ff;
     color: #fff;
     text-shadow: 0 0 16px rgba(255, 255, 255, .85), 0 0 34px rgba(255, 255, 255, .4);
-    box-shadow: 0 0 26px -4px rgba(255, 42, 32, .75);
+    box-shadow: 0 0 26px -4px rgba(47, 111, 237, .75);
   }
   .btn--cta svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .8)); }
   .btn--soft {
     background: var(--accent-hot);
-    border-color: #ff7a72;
+    border-color: #6fa8ff;
     color: #fff;
     text-shadow: 0 0 14px rgba(255, 255, 255, .8);
-    box-shadow: 0 0 22px -4px rgba(255, 42, 32, .8);
+    box-shadow: 0 0 22px -4px rgba(47, 111, 237, .8);
   }
   /* белая кнопка карты подсветку не получает */
   .btn--map, .btn--map:hover { background: #fff; color: #12090a; border-color: #fff; box-shadow: none; text-shadow: none; }
@@ -155,11 +155,11 @@ a[data-no-phone] { cursor: default; }
   inset: 0 0 -30px 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(8,4,5,.88) 0%, rgba(8,4,5,.55) 48%, transparent 100%);
+  background: linear-gradient(180deg, rgba(4,7,14,.88) 0%, rgba(4,7,14,.55) 48%, transparent 100%);
   transition: background .25s ease;
 }
 .header.is-scrolled::before {
-  background: linear-gradient(180deg, rgba(8,4,5,.97) 0%, rgba(8,4,5,.9) 60%, rgba(8,4,5,.3) 100%);
+  background: linear-gradient(180deg, rgba(4,7,14,.97) 0%, rgba(4,7,14,.9) 60%, rgba(4,7,14,.3) 100%);
 }
 
 .header__inner {
@@ -181,8 +181,11 @@ a[data-no-phone] { cursor: default; }
   font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
 }
 .logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
-.logo__sub { display: none; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
+/* Шапка всегда лежит на собственной тёмной подложке (.header::before),
+   даже когда фон страницы светлый — поэтому текст в ней светлый всегда,
+   а не через var(--text)/var(--text-muted), которые зависят от темы. */
+.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; color: #f4f6fb; }
+.logo__sub { display: none; font-size: var(--fs-xs); color: rgba(244, 246, 251, .72); white-space: nowrap; }
 @media (min-width: 560px) { .logo__sub { display: block; } }
 
 /* меню строго по центру шапки, независимо от ширины лого и правого блока */
@@ -194,12 +197,12 @@ a[data-no-phone] { cursor: default; }
      сервиса и графиком работы, а не по центру всей шапки */
   margin-inline: auto;
 }
-.nav a { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); transition: color .15s; }
-.nav a:hover { color: var(--text); }
+.nav a { font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; color: rgba(244, 246, 251, .75); transition: color .15s; }
+.nav a:hover { color: #fff; }
 
 .header__side { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
 
-.header__hours { display: none; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-muted); }
+.header__hours { display: none; align-items: center; gap: 8px; font-size: var(--fs-sm); color: rgba(244, 246, 251, .85); }
 .header__dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--closed); box-shadow: 0 0 9px 1px var(--closed);
@@ -207,15 +210,15 @@ a[data-no-phone] { cursor: default; }
 }
 .header__hours.is-open .header__dot { background: var(--open); box-shadow: 0 0 9px 1px var(--open); }
 
-.header__phone { display: none; align-items: center; gap: 7px; font-size: var(--fs-sm); font-weight: 600; }
+.header__phone { display: none; align-items: center; gap: 7px; font-size: var(--fs-sm); font-weight: 600; color: #f4f6fb; }
 .header__cta { display: none; }
 
 .burger {
   display: grid; place-items: center; flex-shrink: 0;
   width: 40px; height: 40px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(244, 246, 251, .3);
   border-radius: var(--radius-sm);
-  color: var(--text);
+  color: #f4f6fb;
 }
 
 @media (min-width: 700px)  { .header__phone { display: flex; } }
@@ -281,7 +284,7 @@ a[data-no-phone] { cursor: default; }
 .wa-float:hover { background: var(--wa-hover); transform: scale(1.05); }
 @media (min-width: 900px) { .wa-float { display: none; } }
 
-.text-accent { color: var(--accent-hot); }
+.text-accent { color: var(--accent); }
 
 /* ---------- утилиты ---------- */
 .visually-hidden {

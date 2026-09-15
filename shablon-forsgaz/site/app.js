@@ -666,7 +666,9 @@
     var ph = C.contacts.phoneDisplay;
 
     var net = '';
-    if (y.org)       net += '<a href="' + esc(y.org) + '" target="_blank" rel="noopener">Яндекс.Карты</a>';
+    if (y.org)       net += '<a href="' + esc(y.org) + '" target="_blank" rel="noopener">Карточка на Яндекс.Картах</a>';
+    if (y.reviews)   net += '<a href="' + esc(y.reviews) + '" target="_blank" rel="noopener">Отзывы на Яндекс.Картах</a>';
+    if (y.route)     net += '<a href="' + esc(y.route) + '" target="_blank" rel="noopener">Построить маршрут</a>';
     if (links.avito) net += '<a href="' + esc(links.avito) + '" target="_blank" rel="noopener">Авито</a>';
 
     var reqs = [];
@@ -687,9 +689,10 @@
         '</div>' +
 
         '<div class="footer__col">' +
-          '<b>Контакты</b>' +
+          '<b>' + esc(f.contactsTitle || 'Контакты') + '</b>' +
           (ph ? '<a href="tel:+' + esc(C.contacts.phone) + '">' + esc(ph) + '</a>' : '<span>Телефон — уточняется</span>') +
           '<a href="' + waLink() + '"' + deadAttr(waLink()) + '>Написать в WhatsApp</a>' +
+          (tgLink() !== '#' ? '<a href="' + tgLink() + '" target="_blank" rel="noopener">Написать в Telegram</a>' : '') +
         '</div>' +
 
         '<div class="footer__col">' +
@@ -701,8 +704,10 @@
 
       '<div class="footer__bottom">' +
         '<span>© ' + new Date().getFullYear() + ' ' + esc(legal.orgName || S.brand.name) +
-          (reqs.length ? ' · ' + reqs.join(' · ') : '') + ' · Карта © OpenStreetMap</span>' +
-        '<a href="#">' + esc(f.privacyLabel) + '</a>' +
+          (reqs.length ? ' · ' + reqs.join(' · ') : '') + ' · Карта © Яндекс</span>' +
+        (f.privacyLabel && f.privacyHref
+          ? '<a href="' + esc(f.privacyHref) + '">' + esc(f.privacyLabel) + '</a>'
+          : '') +
       '</div>' +
     '</div></footer>';
   }
