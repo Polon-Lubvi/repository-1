@@ -156,14 +156,14 @@
   gap: 8px;
   width: 100%; height: 100%;
   padding: 24px;
-  border: 1px dashed rgba(120, 170, 255, .34);
+  border: 1px dashed rgba(47, 111, 237, .38);
   border-radius: var(--radius);
-  background: rgba(4, 7, 14, .42);
+  background: var(--bg-elevated);
   text-align: center;
 }
 .photo-stub__tag {
   font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em;
-  text-transform: uppercase; color: rgba(120, 170, 255, .85);
+  text-transform: uppercase; color: var(--accent);
 }
 .photo-stub__text { font-size: var(--fs-sm); line-height: 1.4; max-width: 30ch; color: var(--text-muted); }
 
@@ -194,7 +194,7 @@
 .clients {
   border-block: 1px solid var(--line);
   padding-block: 16px 14px;
-  background: #05070d;
+  background: var(--bg-elevated);
 }
 .clients__strip {
   width: 100%;
@@ -252,7 +252,7 @@
   padding-inline: 22px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-pill);
-  background: rgba(255,255,255,.04);
+  background: rgba(13, 27, 46, .045);
   color: var(--text-muted);
   font-size: var(--fs-body);
   font-weight: 600;
@@ -406,13 +406,15 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: #0d1626;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .55);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .35);
   font-size: var(--fs-xs);
   font-weight: 400;
   line-height: 1.45;
   text-align: left;
   white-space: normal;
-  color: var(--text-muted);
+  /* подсказка всегда тёмная (как нативный тултип), поэтому текст
+     фиксированно светлый — не зависит от темы страницы */
+  color: #b9c6d9;
   opacity: 0;
   visibility: hidden;
   transform: translateY(4px);
@@ -441,7 +443,7 @@
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);
   font-weight: 700;
   letter-spacing: -0.028em;
-  color: #4d8bff;
+  color: var(--accent);
 }
 
 /* отзыв карточкой */
@@ -461,7 +463,7 @@
   display: flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255,255,255,.08);
+  background: rgba(13, 27, 46, .07);
   font-size: 0.95rem; font-weight: 700; line-height: 1;
   color: var(--text);
   text-transform: uppercase;
@@ -536,7 +538,7 @@
 
 /* карточка отзыва как ссылка на Яндекс.Карты */
 .panel__review.is-link { display: block; transition: border-color .2s, background-color .2s; }
-.panel__review.is-link:hover { border-color: var(--text-dim); background: #101b2e; }
+.panel__review.is-link:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .review__go { margin-left: auto; color: var(--text-dim); transition: color .2s, transform .2s; }
 .panel__review.is-link:hover .review__go { color: var(--text); transform: translateX(3px); }
 
@@ -780,7 +782,7 @@
   opacity: .75;
 }
 .person__slot::before { content: '— '; }
-.person--empty .person__role .person__slot { color: rgba(120,170,255,.7); }
+.person--empty .person__role .person__slot { color: var(--text-dim); }
 .person__quote { margin-top: 12px; min-height: 3em; font-size: var(--fs-sm); line-height: 1.55; color: var(--text-muted); }
 
 /* ---------- чего мы не делаем ---------- */
@@ -830,7 +832,7 @@
   background: var(--bg-elevated);
   transition: border-color .2s, background-color .2s;
 }
-a.rating:hover { border-color: var(--text-dim); background: #101b2e; }
+a.rating:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .rating__value { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
 .rating__stars { display: flex; gap: 2px; color: #ffc531; }
 .rating__counts { display: block; margin-top: 5px; font-size: var(--fs-xs); color: var(--text-dim); }
@@ -853,13 +855,13 @@ a.rating:hover .rating__go { color: var(--text); transform: translateX(3px); }
   background: var(--bg-elevated);
   transition: border-color .2s, background-color .2s;
 }
-a.review:hover { border-color: var(--text-dim); background: #101b2e; }
+a.review:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .review__top { display: flex; align-items: center; gap: 12px; }
 .review__ava {
   display: flex; align-items: center; justify-content: center;
   width: 42px; height: 42px; flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255,255,255,.08);
+  background: rgba(13, 27, 46, .07);
   font-size: 1rem; font-weight: 700; line-height: 1;
   text-transform: uppercase;
 }
@@ -1087,7 +1089,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
 /* =====================================================================
    БЛОК 11 — Подвал
    ===================================================================== */
-.footer { background: #05070d; border-top: 1px solid var(--line); padding-block: clamp(40px, 6vw, 64px); }
+.footer { background: var(--bg-elevated); border-top: 1px solid var(--line); padding-block: clamp(40px, 6vw, 64px); }
 
 .footer__grid { display: grid; gap: 28px; }
 @media (min-width: 720px) { .footer__grid { grid-template-columns: 1.4fr 1fr 1fr; } }

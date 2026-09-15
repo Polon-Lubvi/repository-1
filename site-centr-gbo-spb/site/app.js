@@ -691,7 +691,6 @@
           '<b>Контакты</b>' +
           (ph ? '<a href="tel:+' + esc(C.contacts.phone) + '">' + esc(ph) + '</a>' : '<span>Телефон — уточняется</span>') +
           '<a href="' + waLink() + '"' + deadAttr(waLink()) + '>Написать в WhatsApp</a>' +
-          (C.contacts.viber ? '<a href="' + esc(viberLink()) + '" target="_blank" rel="noopener">Написать в Viber</a>' : '') +
         '</div>' +
 
         '<div class="footer__col">' +

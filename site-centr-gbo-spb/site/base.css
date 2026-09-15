@@ -181,8 +181,11 @@ a[data-no-phone] { cursor: default; }
   font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
 }
 .logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
-.logo__sub { display: none; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
+/* Шапка всегда лежит на собственной тёмной подложке (.header::before),
+   даже когда фон страницы светлый — поэтому текст в ней светлый всегда,
+   а не через var(--text)/var(--text-muted), которые зависят от темы. */
+.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; color: #f4f6fb; }
+.logo__sub { display: none; font-size: var(--fs-xs); color: rgba(244, 246, 251, .72); white-space: nowrap; }
 @media (min-width: 560px) { .logo__sub { display: block; } }
 
 /* меню строго по центру шапки, независимо от ширины лого и правого блока */
@@ -194,12 +197,12 @@ a[data-no-phone] { cursor: default; }
      сервиса и графиком работы, а не по центру всей шапки */
   margin-inline: auto;
 }
-.nav a { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); transition: color .15s; }
-.nav a:hover { color: var(--text); }
+.nav a { font-size: var(--fs-sm); font-weight: 500; color: rgba(244, 246, 251, .75); transition: color .15s; }
+.nav a:hover { color: #fff; }
 
 .header__side { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
 
-.header__hours { display: none; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-muted); }
+.header__hours { display: none; align-items: center; gap: 8px; font-size: var(--fs-sm); color: rgba(244, 246, 251, .85); }
 .header__dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--closed); box-shadow: 0 0 9px 1px var(--closed);
@@ -207,15 +210,15 @@ a[data-no-phone] { cursor: default; }
 }
 .header__hours.is-open .header__dot { background: var(--open); box-shadow: 0 0 9px 1px var(--open); }
 
-.header__phone { display: none; align-items: center; gap: 7px; font-size: var(--fs-sm); font-weight: 600; }
+.header__phone { display: none; align-items: center; gap: 7px; font-size: var(--fs-sm); font-weight: 600; color: #f4f6fb; }
 .header__cta { display: none; }
 
 .burger {
   display: grid; place-items: center; flex-shrink: 0;
   width: 40px; height: 40px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(244, 246, 251, .3);
   border-radius: var(--radius-sm);
-  color: var(--text);
+  color: #f4f6fb;
 }
 
 @media (min-width: 700px)  { .header__phone { display: flex; } }
@@ -281,7 +284,7 @@ a[data-no-phone] { cursor: default; }
 .wa-float:hover { background: var(--wa-hover); transform: scale(1.05); }
 @media (min-width: 900px) { .wa-float { display: none; } }
 
-.text-accent { color: var(--accent-hot); }
+.text-accent { color: var(--accent); }
 
 /* ---------- утилиты ---------- */
 .visually-hidden {
