@@ -953,8 +953,11 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .loc__map-img { display: block; width: 100%; height: auto; }
 .loc__map:hover { border-color: var(--text-dim); }
 
-/* ---------- лента фото (блок 9 и блок 8): листается влево-вправо ---------- */
-.strip { position: relative; margin-top: 14px; }
+/* ---------- лента фото (блок 9 и блок 8): листается влево-вправо ----------
+   min-width: 0 обязателен — иначе внутри грид-ячейки (аккордеон вопросов)
+   .strip растягивается по контенту шире колонки и вылезает за край экрана
+   на телефоне, поэтому не совпадает с обещанием листать свайпом. */
+.strip { position: relative; margin-top: 14px; min-width: 0; }
 .strip__track {
   display: flex;
   gap: 10px;
@@ -963,6 +966,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
+  min-width: 0;
 }
 .strip__track::-webkit-scrollbar { height: 6px; }
 .strip__track::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
