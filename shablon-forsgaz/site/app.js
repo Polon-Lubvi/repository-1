@@ -253,7 +253,8 @@
             '<a class="btn btn--cta" href="' + wa + '"' + deadAttr(wa) + '>' +
               esc(h.cta) + ic('arrow', { size: 18 }) + '</a>' +
             '<p class="hero__counter">' +
-              '<b id="hero-counter">' + fmt(installCount()) + '</b>' +
+              '<b id="hero-counter">' +
+                (C.counter.text ? esc(C.counter.text) : fmt(installCount())) + '</b>' +
               '<span>' + esc(h.counterLabel) + '</span>' +
             '</p>' +
           '</div>' +
