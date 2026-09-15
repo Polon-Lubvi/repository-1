@@ -60,15 +60,19 @@
   .hero__body { grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 88px); }
 }
 
-/* ---------- заголовок ---------- */
-.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; }
+/* ---------- заголовок ----------
+   Первый экран всегда лежит на своей тёмной сцене (кирпичная стена +
+   затемнение), даже когда фон страницы светлый — поэтому весь текст
+   в hero фиксированно светлый, а не через var(--text)/var(--text-muted),
+   которые зависят от темы. */
+.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; color: #f4f6fb; }
 .hero__engines {
   display: block;
   margin-top: 16px;
   font-size: var(--fs-lead);
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: var(--text-muted);
+  color: rgba(244, 246, 251, .75);
 }
 
 /* Телефон: заголовок и строка впрыска по центру, впрыск — одной строкой */
@@ -94,9 +98,9 @@
 /* мини-хуки */
 .hero__hooks { display: grid; gap: 13px; margin-top: 26px; }
 .hero__hook { display: flex; gap: 11px; align-items: flex-start; }
-.hero__hook svg { flex-shrink: 0; margin-top: 3px; color: var(--accent-hot); }
-.hero__hook b { font-weight: 600; letter-spacing: -0.01em; }
-.hero__hook span { color: var(--text-muted); }
+.hero__hook svg { flex-shrink: 0; margin-top: 3px; color: #4d8bff; }
+.hero__hook b { font-weight: 600; letter-spacing: -0.01em; color: #f4f6fb; }
+.hero__hook span { color: rgba(244, 246, 251, .75); }
 .hero__hook p { font-size: var(--fs-sm); line-height: 1.45; }
 
 /* кнопка и счётчик — в одну строку */
@@ -114,8 +118,9 @@
   font-weight: 800;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
+  color: #f4f6fb;
 }
-.hero__counter span { font-size: var(--fs-sm); color: var(--text-muted); white-space: nowrap; }
+.hero__counter span { font-size: var(--fs-sm); color: rgba(244, 246, 251, .75); white-space: nowrap; }
 
 /* ---------- правая колонка: надпись + фото одним блоком ---------- */
 .hero__media { display: grid; gap: 16px; }
@@ -126,8 +131,9 @@
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
+  color: #f4f6fb;
 }
-.hero__caption-sub { display: block; margin-top: 6px; font-size: var(--fs-sm); color: var(--text-muted); }
+.hero__caption-sub { display: block; margin-top: 6px; font-size: var(--fs-sm); color: rgba(244, 246, 251, .75); }
 
 .hero__photo {
   position: relative;
