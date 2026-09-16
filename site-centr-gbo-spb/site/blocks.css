@@ -908,7 +908,6 @@ a.review:hover .review__foot { color: var(--text-muted); }
 /* Список-«гармошка»: вопрос виден всегда, ответ раскрывается по клику
    на строку. Поведение и стрелка — общие с блоком 5 (класс .acc). */
 .faq__acc {
-  max-width: 880px;
   margin-top: clamp(28px, 4vw, 44px);
 }
 .faq__acc .acc__head {
@@ -1072,9 +1071,11 @@ a.review:hover .review__foot { color: var(--text-muted); }
   justify-items: start;
 }
 .form__lead {
+  width: 100%;
   font-size: clamp(1.4rem, 2.4vw, 2.4rem);
   font-weight: 700;
   letter-spacing: -0.035em;
+  text-align: center;
   /* Без white-space:nowrap — с длинным текстом строка вылезала за
      скруглённую карточку на средних экранах вместо переноса. */
 }
