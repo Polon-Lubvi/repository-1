@@ -633,6 +633,15 @@
 /* ---------- фото работ ---------- */
 .compare__photos { display: grid; gap: 14px; }
 @media (min-width: 560px) and (max-width: 1179px) { .compare__photos { grid-template-columns: 1fr 1fr; } }
+
+/* Рядом с таблицей фото тянутся по её высоте: колонка растягивается,
+   две карточки делят её поровну. Поэтому нижний край фото всегда
+   совпадает с концом текста — при фиксированном 4/3 на широком экране
+   таблица становилась короче, а фото свисали ниже неё. */
+@media (min-width: 1180px) {
+  .compare__photos { align-self: stretch; grid-template-rows: 1fr 1fr; }
+  .compare__photos .compare__figure { aspect-ratio: auto; min-height: 0; }
+}
 .compare__figure {
   position: relative;
   aspect-ratio: 4 / 3;
