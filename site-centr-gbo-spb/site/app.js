@@ -30,6 +30,13 @@
   function viberLink() { return C.contacts.viber || '#'; }
   function deadAttr(href) { return href === '#' ? ' data-no-phone aria-disabled="true"' : ' target="_blank" rel="noopener"'; }
 
+  /* Логотип клиента, если задан в content.js; иначе плашка с инициалами. */
+  function logoMark() {
+    return S.brand.logo
+      ? '<img class="logo__mark logo__mark--img" src="' + esc(S.brand.logo) + '" alt="' + esc(S.brand.name) + '">'
+      : '<span class="logo__mark">' + esc(S.brand.short) + '</span>';
+  }
+
   /* {фигурные скобки} -> ярко-белым, остальной текст приглушённый.
      Так сделаны заголовки подблоков (блок 3). */
   function accent(text) {
@@ -190,7 +197,7 @@
     '<header class="header" id="site-header">' +
       '<div class="wrap header__inner">' +
         '<a class="logo" href="#top">' +
-          '<span class="logo__mark">' + esc(S.brand.short) + '</span>' +
+          logoMark() +
           '<span class="logo__name">' +
             '<span class="logo__title">' + esc(S.brand.name) + '</span>' +
             '<span class="logo__sub">' + esc(S.brand.tagline) + '</span>' +
@@ -680,7 +687,7 @@
 
         '<div>' +
           '<div class="footer__brand">' +
-            '<span class="logo__mark">' + esc(S.brand.short) + '</span>' +
+            logoMark() +
             '<b>' + esc(legal.orgName || S.brand.name) + '</b>' +
           '</div>' +
           '<p class="footer__addr">' + esc(f.address) + '<br>' + esc(f.hours) + '</p>' +

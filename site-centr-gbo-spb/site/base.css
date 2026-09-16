@@ -58,25 +58,24 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; }
 .btn:active { transform: translateY(1px); }
 .btn svg { transition: transform .2s ease; }
 
-/* Главная кнопка: в покое сдержанная тёмно-синяя,
-   на ховере заливается ярким синим. */
+/* Главная кнопка: в покое сдержанная тёмно-зелёная,
+   на ховере заливается ярким зелёным — поэтому текст на ховере тёмный
+   (var(--on-accent)), а не белый: белый на ярко-зелёном не читается. */
 .btn--cta {
   background: var(--accent-deep);
   color: #fff;
-  border: 1px solid #1d4d8c;
+  border: 1px solid #1c6b3b;
 }
 .btn--cta:hover,
 .btn--cta:focus-visible {
   background: var(--accent-hot);
-  border-color: #6fa8ff;
-  color: #fff;
-  text-shadow: 0 0 16px rgba(255, 255, 255, .85), 0 0 34px rgba(255, 255, 255, .4);
-  box-shadow: 0 0 26px -4px rgba(47, 111, 237, .75);
+  border-color: var(--accent-hot);
+  color: var(--on-accent);
+  box-shadow: 0 0 26px -4px rgba(61, 220, 132, .75);
 }
 .btn--cta:hover svg,
 .btn--cta:focus-visible svg {
   transform: translateX(3px);
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, .8));
 }
 
 .btn--sm { height: 38px; padding-inline: 18px; font-size: var(--fs-sm); }
@@ -84,16 +83,15 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; }
 /* Кнопка в шапке: в покое приглушённая, при наведении загорается. */
 .btn--soft {
   background: var(--accent-deep);
-  border: 1px solid #1d4d8c;
+  border: 1px solid #1c6b3b;
   color: #fff;
 }
 .btn--soft:hover,
 .btn--soft:focus-visible {
   background: var(--accent-hot);
-  border-color: #6fa8ff;
-  color: #fff;
-  text-shadow: 0 0 14px rgba(255, 255, 255, .8);
-  box-shadow: 0 0 22px -4px rgba(47, 111, 237, .8);
+  border-color: var(--accent-hot);
+  color: var(--on-accent);
+  box-shadow: 0 0 22px -4px rgba(61, 220, 132, .8);
 }
 
 /* Ссылка без номера телефона: выглядит как обычная кнопка,
@@ -122,18 +120,15 @@ a[data-no-phone] { cursor: default; }
 @media (hover: none), (pointer: coarse) {
   .btn--cta {
     background: var(--accent-hot);
-    border-color: #6fa8ff;
-    color: #fff;
-    text-shadow: 0 0 16px rgba(255, 255, 255, .85), 0 0 34px rgba(255, 255, 255, .4);
-    box-shadow: 0 0 26px -4px rgba(47, 111, 237, .75);
+    border-color: var(--accent-hot);
+    color: var(--on-accent);
+    box-shadow: 0 0 26px -4px rgba(61, 220, 132, .75);
   }
-  .btn--cta svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .8)); }
   .btn--soft {
     background: var(--accent-hot);
-    border-color: #6fa8ff;
-    color: #fff;
-    text-shadow: 0 0 14px rgba(255, 255, 255, .8);
-    box-shadow: 0 0 22px -4px rgba(47, 111, 237, .8);
+    border-color: var(--accent-hot);
+    color: var(--on-accent);
+    box-shadow: 0 0 22px -4px rgba(61, 220, 132, .8);
   }
   /* белая кнопка карты подсветку не получает */
   .btn--map, .btn--map:hover { background: #fff; color: #12090a; border-color: #fff; box-shadow: none; text-shadow: none; }
@@ -179,6 +174,15 @@ a[data-no-phone] { cursor: default; }
   background: var(--accent);
   color: var(--on-accent);
   font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
+}
+/* Настоящий логотип клиента — картинка со своим чёрным фоном, поэтому
+   без квадратной плашки-заглушки: показываем по родной пропорции. */
+.logo__mark--img {
+  width: auto; height: 34px;
+  background: none;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 /* Шапка всегда лежит на собственной тёмной подложке (.header::before),
