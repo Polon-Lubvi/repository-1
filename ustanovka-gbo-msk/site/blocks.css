@@ -242,17 +242,20 @@
    БЛОК 3 — Что мы делаем. Три переключаемых подблока.
    Фон чёрный, без кирпича.
    ===================================================================== */
-.tuning { background: var(--bg); padding-block: clamp(56px, 8vw, 104px); }
+/* Блок плотнее соседних: заголовок, плашки и содержимое идут ближе друг
+   к другу, иначе подблок с одним абзацем выглядит полупустым. */
+.tuning { background: var(--bg); padding-block: clamp(48px, 6.5vw, 84px); }
 
 .tuning__title {
   font-size: clamp(1.5rem, 2.95vw, 3.4rem);
   letter-spacing: -0.038em;
   text-wrap: balance;
+  /* Без white-space:nowrap — длинный заголовок не влезал в одну строку
+     и уезжал за правый край страницы вместо переноса. */
 }
-@media (min-width: 1024px) { .tuning__title { white-space: nowrap; } }
 
 /* ---------- плашки-переключатели ---------- */
-.tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: clamp(28px, 4vw, 44px); }
+.tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: clamp(20px, 2.6vw, 30px); }
 .tab {
   height: 48px;
   padding-inline: 22px;
@@ -274,7 +277,7 @@
 }
 
 /* ---------- сцена подблока ---------- */
-.tuning__stage { position: relative; margin-top: clamp(24px, 3vw, 36px); }
+.tuning__stage { position: relative; margin-top: clamp(18px, 2.2vw, 26px); }
 
 .tuning__arrow {
   position: absolute;
@@ -311,8 +314,13 @@
 
   /* Подблоки с фото (не с панелями): вывод и кнопка остаются в левой
      колонке, на уровне с фотографией. Раньше они уходили во всю ширину
-     под высокое фото — слева зиял пустой кусок, страница растягивалась. */
-  .panel--shots .panel__foot { grid-column: 1; }
+     под высокое фото — слева зиял пустой кусок, страница растягивалась.
+     Текст прижат к верху, а фото растянуто на обе строки: при align-items:
+     center текст висел по центру высокого кадра, и между абзацами, отзывом
+     и кнопкой оставались пустые полосы. */
+  .panel--shots .panel__body  { grid-column: 1; grid-row: 1; align-self: start; }
+  .panel--shots .panel__foot  { grid-column: 1; grid-row: 2; align-self: start; }
+  .panel--shots .panel__media { grid-row: 1 / span 2; align-self: start; }
   /* фото стоит по центру своей колонки, не прижимаясь ни к тексту, ни к краю.
      Центрируем саму ленту, а не колонку: justify-self схлопывал колонку
      до ширины содержимого, и кадры сжимались почти в ноль. */
@@ -558,8 +566,9 @@
   font-size: clamp(1.5rem, 2.95vw, 3.4rem);
   letter-spacing: -0.038em;
   text-wrap: balance;
+  /* Без white-space:nowrap — из-за него длинный заголовок уезжал
+     за правый край и вся страница ездила вбок. */
 }
-@media (min-width: 1024px) { .compare__title { white-space: nowrap; } }
 
 .compare__grid { display: grid; gap: clamp(28px, 4vw, 56px); margin-top: clamp(28px, 4vw, 48px); }
 @media (min-width: 1180px) { .compare__grid { grid-template-columns: 1.35fr 1fr; align-items: start; } }
@@ -1175,11 +1184,14 @@ a.review:hover .review__foot { color: var(--text-muted); }
   justify-items: start;
 }
 .form__lead {
+  width: 100%;
   font-size: clamp(1.4rem, 2.4vw, 2.4rem);
   font-weight: 700;
   letter-spacing: -0.035em;
+  text-align: center;
+  /* Без white-space:nowrap — с длинным текстом строка вылезала за
+     скруглённую карточку вместо переноса. */
 }
-@media (min-width: 760px) { .form__lead { white-space: nowrap; } }
 
 .form__submit {
   height: auto; min-height: 62px;
