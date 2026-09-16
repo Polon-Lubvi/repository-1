@@ -444,12 +444,15 @@
 }
 
 .panel__foot { display: grid; gap: 18px; justify-items: start; }
+/* Строка-акцент под текстом подблока — чёрной, а не красной:
+   рядом уже есть красный заголовок и красная кнопка, и три красных
+   пятна подряд спорят друг с другом. --text здесь и есть чёрный. */
 .panel__accent {
   margin-top: 0;
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);
   font-weight: 700;
   letter-spacing: -0.028em;
-  color: var(--accent);
+  color: var(--text);
 }
 
 /* отзыв карточкой */
