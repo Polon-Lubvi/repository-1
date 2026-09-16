@@ -18,16 +18,31 @@
   }
   function fmt(n) { return Math.round(n).toLocaleString('ru-RU'); }
 
-  /* Ссылки в мессенджеры. Без номера в конфиге — «мёртвая» ссылка,
-     чтобы это было заметно, а не вело в никуда. */
+  /* Ссылки для кнопок связи. Без номера в конфиге — «мёртвая» ссылка,
+     чтобы это было заметно, а не вело в никуда.
+
+     У сервиса один городской номер, на который WhatsApp не работает,
+     поэтому в конфиге стоит contacts.whatsapp: false — и тогда ВСЕ кнопки
+     связи ведут на звонок. Появится мобильный или мессенджер — ставим
+     contacts.whatsapp: true (или заполняем telegram), и кнопки сами
+     переключаются обратно, править разметку не нужно. */
+  function phoneMode() { return C.contacts.whatsapp === false; }
+  function telLink() { return C.contacts.phone ? 'tel:+' + C.contacts.phone : '#'; }
   function waLink(text) {
     if (!C.contacts.phone) return '#';
+    if (phoneMode()) return telLink();
     var t = text || C.contacts.waText;
     return 'https://wa.me/' + C.contacts.phone + (t ? '?text=' + encodeURIComponent(t) : '');
   }
   function tgLink() { return C.contacts.telegram ? 'https://t.me/' + C.contacts.telegram : '#'; }
   function maxLink() { return C.contacts.max || '#'; }
-  function deadAttr(href) { return href === '#' ? ' data-no-phone aria-disabled="true"' : ' target="_blank" rel="noopener"'; }
+  function deadAttr(href) {
+    if (href === '#') return ' data-no-phone aria-disabled="true"';
+    /* tel: открывать в новой вкладке нельзя — в десктопных браузерах
+       это оставляет пустую вкладку вместо набора номера */
+    if (href.indexOf('tel:') === 0) return '';
+    return ' target="_blank" rel="noopener"';
+  }
 
   /* {фигурные скобки} -> ярко-белым, остальной текст приглушённый.
      Так сделаны заголовки подблоков (блок 3). */
@@ -253,7 +268,8 @@
             '<a class="btn btn--cta" href="' + wa + '"' + deadAttr(wa) + '>' +
               esc(h.cta) + ic('arrow', { size: 18 }) + '</a>' +
             '<p class="hero__counter">' +
-              '<b id="hero-counter">' + fmt(installCount()) + '</b>' +
+              '<b id="hero-counter">' +
+                (C.counter.text ? esc(C.counter.text) : fmt(installCount())) + '</b>' +
               '<span>' + esc(h.counterLabel) + '</span>' +
             '</p>' +
           '</div>' +
@@ -608,11 +624,18 @@
       '<div class="loc__grid">' +
 
         '<div>' +
-          '<a class="loc__map" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
-            'aria-label="Открыть в Яндекс.Картах">' +
-            '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
-              'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
-          '</a>' +
+          /* Живая карта Яндекса с карточкой организации. Если виджет
+             не задан — показываем статичную картинку, как раньше. */
+          (l.mapEmbed
+            ? '<div class="loc__map loc__map--live">' +
+                '<iframe src="' + esc(l.mapEmbed) + '" title="Карта: ' + esc(l.address) + '" ' +
+                  'loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+              '</div>'
+            : '<a class="loc__map" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
+                'aria-label="Открыть в Яндекс.Картах">' +
+                '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
+                  'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
+              '</a>') +
         '</div>' +
 
         '<div class="loc__info">' +
@@ -666,7 +689,9 @@
     var ph = C.contacts.phoneDisplay;
 
     var net = '';
-    if (y.org)       net += '<a href="' + esc(y.org) + '" target="_blank" rel="noopener">Яндекс.Карты</a>';
+    if (y.org)       net += '<a href="' + esc(y.org) + '" target="_blank" rel="noopener">Карточка на Яндекс.Картах</a>';
+    if (y.reviews)   net += '<a href="' + esc(y.reviews) + '" target="_blank" rel="noopener">Отзывы на Яндекс.Картах</a>';
+    if (y.route)     net += '<a href="' + esc(y.route) + '" target="_blank" rel="noopener">Построить маршрут</a>';
     if (links.avito) net += '<a href="' + esc(links.avito) + '" target="_blank" rel="noopener">Авито</a>';
 
     var reqs = [];
@@ -687,9 +712,12 @@
         '</div>' +
 
         '<div class="footer__col">' +
-          '<b>Контакты</b>' +
+          '<b>' + esc(f.contactsTitle || 'Контакты') + '</b>' +
           (ph ? '<a href="tel:+' + esc(C.contacts.phone) + '">' + esc(ph) + '</a>' : '<span>Телефон — уточняется</span>') +
-          '<a href="' + waLink() + '"' + deadAttr(waLink()) + '>Написать в WhatsApp</a>' +
+          (phoneMode()
+            ? ''
+            : '<a href="' + waLink() + '"' + deadAttr(waLink()) + '>Написать в WhatsApp</a>') +
+          (tgLink() !== '#' ? '<a href="' + tgLink() + '" target="_blank" rel="noopener">Написать в Telegram</a>' : '') +
         '</div>' +
 
         '<div class="footer__col">' +
@@ -701,8 +729,10 @@
 
       '<div class="footer__bottom">' +
         '<span>© ' + new Date().getFullYear() + ' ' + esc(legal.orgName || S.brand.name) +
-          (reqs.length ? ' · ' + reqs.join(' · ') : '') + ' · Карта © OpenStreetMap</span>' +
-        '<a href="#">' + esc(f.privacyLabel) + '</a>' +
+          (reqs.length ? ' · ' + reqs.join(' · ') : '') + ' · Карта © Яндекс</span>' +
+        (f.privacyLabel && f.privacyHref
+          ? '<a href="' + esc(f.privacyHref) + '">' + esc(f.privacyLabel) + '</a>'
+          : '') +
       '</div>' +
     '</div></footer>';
   }
@@ -710,8 +740,10 @@
   /* =====================  ПЛАВАЮЩАЯ КНОПКА WA (моб.)  ===================== */
   function renderWaFloat() {
     var wa = waLink();
-    return '<a class="wa-float" href="' + wa + '"' + deadAttr(wa) + ' aria-label="Написать в WhatsApp">' +
-      ic('whatsapp', { size: 26 }) + '</a>';
+    var call = phoneMode();
+    return '<a class="wa-float' + (call ? ' wa-float--call' : '') + '" href="' + wa + '"' + deadAttr(wa) +
+      ' aria-label="' + (call ? 'Позвонить' : 'Написать в WhatsApp') + '">' +
+      ic(call ? 'phone' : 'whatsapp', { size: 26 }) + '</a>';
   }
 
   /* =====================  СБОРКА  ===================== */

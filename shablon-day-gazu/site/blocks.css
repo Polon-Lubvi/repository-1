@@ -60,15 +60,19 @@
   .hero__body { grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 88px); }
 }
 
-/* ---------- заголовок ---------- */
-.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; }
+/* ---------- заголовок ----------
+   Первый экран всегда лежит на своей тёмной сцене (кирпичная стена +
+   затемнение), даже когда фон страницы светлый — поэтому весь текст
+   в hero фиксированно светлый, а не через var(--text)/var(--text-muted),
+   которые зависят от темы. */
+.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; color: #f7f4f3; }
 .hero__engines {
   display: block;
   margin-top: 16px;
   font-size: var(--fs-lead);
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: var(--text-muted);
+  color: rgba(247, 244, 243, .75);
 }
 
 /* Телефон: заголовок и строка впрыска по центру, впрыск — одной строкой */
@@ -86,17 +90,17 @@
   font-size: clamp(1.4rem, 2.2vw, 2rem);
   font-weight: 700;
   letter-spacing: -0.028em;
-  color: #ff5b52;
+  color: #ff6a60;
 }
-.hero__term a { color: inherit; border-bottom: 1px solid rgba(255, 91, 82, .42); }
-.hero__term a:hover { border-bottom-color: #ff5b52; }
+.hero__term a { color: inherit; border-bottom: 1px solid rgba(255, 106, 96, .42); }
+.hero__term a:hover { border-bottom-color: #ff6a60; }
 
 /* мини-хуки */
 .hero__hooks { display: grid; gap: 13px; margin-top: 26px; }
 .hero__hook { display: flex; gap: 11px; align-items: flex-start; }
-.hero__hook svg { flex-shrink: 0; margin-top: 3px; color: var(--accent-hot); }
-.hero__hook b { font-weight: 600; letter-spacing: -0.01em; }
-.hero__hook span { color: var(--text-muted); }
+.hero__hook svg { flex-shrink: 0; margin-top: 3px; color: #ff6a60; }
+.hero__hook b { font-weight: 600; letter-spacing: -0.01em; color: #f7f4f3; }
+.hero__hook span { color: rgba(247, 244, 243, .75); }
 .hero__hook p { font-size: var(--fs-sm); line-height: 1.45; }
 
 /* кнопка и счётчик — в одну строку */
@@ -114,8 +118,9 @@
   font-weight: 800;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
+  color: #f7f4f3;
 }
-.hero__counter span { font-size: var(--fs-sm); color: var(--text-muted); white-space: nowrap; }
+.hero__counter span { font-size: var(--fs-sm); color: rgba(247, 244, 243, .75); white-space: nowrap; }
 
 /* ---------- правая колонка: надпись + фото одним блоком ---------- */
 .hero__media { display: grid; gap: 16px; }
@@ -126,8 +131,9 @@
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
+  color: #f7f4f3;
 }
-.hero__caption-sub { display: block; margin-top: 6px; font-size: var(--fs-sm); color: var(--text-muted); }
+.hero__caption-sub { display: block; margin-top: 6px; font-size: var(--fs-sm); color: rgba(247, 244, 243, .75); }
 
 .hero__photo {
   position: relative;
@@ -156,14 +162,14 @@
   gap: 8px;
   width: 100%; height: 100%;
   padding: 24px;
-  border: 1px dashed rgba(255, 190, 180, .34);
+  border: 1px dashed rgba(212, 36, 31, .38);
   border-radius: var(--radius);
-  background: rgba(10, 5, 6, .42);
+  background: var(--bg-elevated);
   text-align: center;
 }
 .photo-stub__tag {
   font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em;
-  text-transform: uppercase; color: rgba(255, 140, 130, .85);
+  text-transform: uppercase; color: var(--accent);
 }
 .photo-stub__text { font-size: var(--fs-sm); line-height: 1.4; max-width: 30ch; color: var(--text-muted); }
 
@@ -194,7 +200,7 @@
 .clients {
   border-block: 1px solid var(--line);
   padding-block: 16px 14px;
-  background: #060304;
+  background: var(--bg-elevated);
 }
 .clients__strip {
   width: 100%;
@@ -252,7 +258,7 @@
   padding-inline: 22px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-pill);
-  background: rgba(255,255,255,.04);
+  background: rgba(28, 19, 21, .045);
   color: var(--text-muted);
   font-size: var(--fs-body);
   font-weight: 600;
@@ -405,14 +411,16 @@
   padding: 11px 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
-  background: #150d0e;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .55);
+  background: #1c1214;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .35);
   font-size: var(--fs-xs);
   font-weight: 400;
   line-height: 1.45;
   text-align: left;
   white-space: normal;
-  color: var(--text-muted);
+  /* подсказка всегда тёмная (как нативный тултип), поэтому текст
+     фиксированно светлый — не зависит от темы страницы */
+  color: #cfbcbd;
   opacity: 0;
   visibility: hidden;
   transform: translateY(4px);
@@ -441,7 +449,7 @@
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);
   font-weight: 700;
   letter-spacing: -0.028em;
-  color: #ff5b52;
+  color: var(--accent);
 }
 
 /* отзыв карточкой */
@@ -461,7 +469,7 @@
   display: flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255,255,255,.08);
+  background: rgba(28, 19, 21, .07);
   font-size: 0.95rem; font-weight: 700; line-height: 1;
   color: var(--text);
   text-transform: uppercase;
@@ -536,7 +544,7 @@
 
 /* карточка отзыва как ссылка на Яндекс.Карты */
 .panel__review.is-link { display: block; transition: border-color .2s, background-color .2s; }
-.panel__review.is-link:hover { border-color: var(--text-dim); background: #1b1214; }
+.panel__review.is-link:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .review__go { margin-left: auto; color: var(--text-dim); transition: color .2s, transform .2s; }
 .panel__review.is-link:hover .review__go { color: var(--text); transform: translateX(3px); }
 
@@ -780,7 +788,7 @@
   opacity: .75;
 }
 .person__slot::before { content: '— '; }
-.person--empty .person__role .person__slot { color: rgba(255,140,130,.7); }
+.person--empty .person__role .person__slot { color: var(--text-dim); }
 .person__quote { margin-top: 12px; min-height: 3em; font-size: var(--fs-sm); line-height: 1.55; color: var(--text-muted); }
 
 /* ---------- чего мы не делаем ---------- */
@@ -795,7 +803,7 @@
 .not__item svg { flex-shrink: 0; margin-top: 4px; color: var(--text-dim); }
 .not__item b { font-weight: 600; color: var(--text); }
 .not__item span { color: var(--text-muted); }
-.not__item a { color: var(--accent-hot); border-bottom: 1px solid rgba(255,42,32,.4); }
+.not__item a { color: var(--accent-hot); border-bottom: 1px solid rgba(255,106,96,.4); }
 .not__item a:hover { border-bottom-color: var(--accent-hot); }
 
 /* =====================================================================
@@ -830,7 +838,7 @@
   background: var(--bg-elevated);
   transition: border-color .2s, background-color .2s;
 }
-a.rating:hover { border-color: var(--text-dim); background: #1b1214; }
+a.rating:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .rating__value { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
 .rating__stars { display: flex; gap: 2px; color: #ffc531; }
 .rating__counts { display: block; margin-top: 5px; font-size: var(--fs-xs); color: var(--text-dim); }
@@ -853,13 +861,13 @@ a.rating:hover .rating__go { color: var(--text); transform: translateX(3px); }
   background: var(--bg-elevated);
   transition: border-color .2s, background-color .2s;
 }
-a.review:hover { border-color: var(--text-dim); background: #1b1214; }
+a.review:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
 .review__top { display: flex; align-items: center; gap: 12px; }
 .review__ava {
   display: flex; align-items: center; justify-content: center;
   width: 42px; height: 42px; flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255,255,255,.08);
+  background: rgba(28, 19, 21, .07);
   font-size: 1rem; font-weight: 700; line-height: 1;
   text-transform: uppercase;
 }
@@ -945,8 +953,16 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .loc__map-img { display: block; width: 100%; height: auto; }
 .loc__map:hover { border-color: var(--text-dim); }
 
-/* ---------- лента фото (блок 9 и блок 8): листается влево-вправо ---------- */
-.strip { position: relative; margin-top: 14px; }
+/* Живая карта Яндекса. aspect-ratio держит высоту до загрузки виджета,
+   иначе при появлении карты страница прыгает. */
+.loc__map--live { aspect-ratio: 4 / 3; }
+.loc__map--live iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+/* ---------- лента фото (блок 9 и блок 8): листается влево-вправо ----------
+   min-width: 0 обязателен — иначе внутри грид-ячейки (аккордеон вопросов)
+   .strip растягивается по контенту шире колонки и вылезает за край экрана
+   на телефоне, поэтому не совпадает с обещанием листать свайпом. */
+.strip { position: relative; margin-top: 14px; min-width: 0; }
 .strip__track {
   display: flex;
   gap: 10px;
@@ -955,6 +971,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
+  min-width: 0;
 }
 .strip__track::-webkit-scrollbar { height: 6px; }
 .strip__track::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
@@ -985,7 +1002,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
   width: 40px; height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line-strong);
-  background: rgba(11, 7, 8, .82);
+  background: rgba(8, 4, 5, .82);
   color: var(--text);
   cursor: pointer;
   transition: background-color .2s, border-color .2s;
@@ -1087,7 +1104,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
 /* =====================================================================
    БЛОК 11 — Подвал
    ===================================================================== */
-.footer { background: #060304; border-top: 1px solid var(--line); padding-block: clamp(40px, 6vw, 64px); }
+.footer { background: var(--bg-elevated); border-top: 1px solid var(--line); padding-block: clamp(40px, 6vw, 64px); }
 
 .footer__grid { display: grid; gap: 28px; }
 @media (min-width: 720px) { .footer__grid { grid-template-columns: 1.4fr 1fr 1fr; } }
