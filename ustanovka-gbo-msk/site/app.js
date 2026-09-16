@@ -467,6 +467,58 @@
     '</div>';
   }
 
+  /* =====================  БЛОК 4.5 — Калькулятор экономии  =====================
+     Ползунки: цена бензина, пробег за месяц, расход на 100 км.
+     Считает, во что обходится топливо на бензине и на газу — и разницу.
+     Цифры диапазонов и цена газа — в config.js, блок calc. */
+  function renderCalculator() {
+    var s = S.calc, cfg = C.calc;
+    if (!s || !cfg) return '';
+
+    function slider(key) {
+      var f = cfg[key], t = s.sliders[key];
+      return '<div class="calc__field">' +
+        '<div class="calc__field-head"><span>' + esc(t.label) + '</span>' +
+          '<b id="calc-out-' + key + '"></b></div>' +
+        '<input type="range" class="calc__range" id="calc-' + key + '" ' +
+          'min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + f.value + '" ' +
+          'aria-label="' + esc(t.label) + '">' +
+      '</div>';
+    }
+
+    function row(label, id) {
+      return '<div class="calc__row"><span>' + esc(label) + '</span>' +
+        '<b class="calc__nums" id="calc-out-' + id + '"></b></div>';
+    }
+
+    var wa = waLink(s.cta.topic);
+
+    return '<section class="calc" id="calc"><div class="wrap">' +
+      '<h2 class="calc__title">' + esc(s.title) + '</h2>' +
+      '<p class="calc__lead">' + esc(s.lead) + '</p>' +
+      '<div class="calc__grid">' +
+
+        '<div class="calc__sliders">' +
+          slider('petrolPrice') + slider('mileage') + slider('consumption') +
+        '</div>' +
+
+        '<div class="calc__result">' +
+          row(s.rows.fuel, 'fuel') +
+          row(s.rows.petrol, 'petrol') +
+          row(s.rows.gas, 'gas') +
+          '<div class="calc__save">' +
+            '<span>' + esc(s.saveLabel) + '</span>' +
+            '<b class="calc__nums" id="calc-out-save"></b>' +
+          '</div>' +
+          '<p class="calc__note">' + esc(s.note) + '</p>' +
+          '<a class="btn btn--cta calc__cta" href="' + wa + '"' + deadAttr(wa) + '>' +
+            esc(s.cta.label) + ic('arrow', { size: 16 }) + '</a>' +
+        '</div>' +
+
+      '</div>' +
+    '</div></section>';
+  }
+
   /* =====================  БЛОК 5 — Мастера  ===================== */
   function renderTeam() {
     var t = S.team;
@@ -732,7 +784,7 @@
 
     document.getElementById('app').innerHTML =
       renderHeader() +
-      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderTeam() + renderReviews() + renderFaq() + renderLocation() + renderForm() + '</main>' +
+      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderCalculator() + renderTeam() + renderReviews() + renderFaq() + renderLocation() + renderForm() + '</main>' +
       renderFooter() +
       renderWaFloat();
 
@@ -744,6 +796,7 @@
     wireHero();
     wireClients();
     wireTuning();
+    wireCalculator();
     wireAccordions();
     wireCarousels();
     wireTerms();
@@ -920,6 +973,56 @@
      панель блока 3 перерисовывается при смене вкладки, и обычные
      обработчики бы отваливались. На компьютере подсказка и так открыта
      по наведению — здесь только тап и закрытие. */
+  /* ---------- калькулятор: пересчёт при каждом движении ползунка ----------
+     Всё считаем за месяц, год — те же числа на 12. Цена газа и перерасход
+     на газу берутся из config.js. */
+  function fmtRub(n) { return fmt(n) + ' ₽'; }
+  function fmtL(n)   { return fmt(n) + ' л'; }
+
+  function wireCalculator() {
+    if (!document.getElementById('calc')) return;
+    var cfg = C.calc, units = S.calc.sliders;
+    var perMonth = S.calc.periodMonth, perYear = S.calc.periodYear;
+
+    function el(id) { return document.getElementById('calc-' + id); }
+    var inputs = { petrolPrice: el('petrolPrice'), mileage: el('mileage'), consumption: el('consumption') };
+    var out = {
+      petrolPrice: el('out-petrolPrice'), mileage: el('out-mileage'), consumption: el('out-consumption'),
+      fuel: el('out-fuel'), petrol: el('out-petrol'), gas: el('out-gas'), save: el('out-save'),
+    };
+
+    /* «1 200 ₽/мес · 14 400 ₽/год» — одной строкой, год приглушённым */
+    function pair(fmtFn, month) {
+      return '<span>' + fmtFn(month) + '<i>/' + esc(perMonth) + '</i></span>' +
+             '<span class="calc__year">' + fmtFn(month * 12) + '<i>/' + esc(perYear) + '</i></span>';
+    }
+
+    function recalc() {
+      var petrolPrice = Number(inputs.petrolPrice.value);
+      var mileage     = Number(inputs.mileage.value);
+      var consumption = Number(inputs.consumption.value);
+
+      out.petrolPrice.textContent = fmt(petrolPrice) + ' ' + units.petrolPrice.unit;
+      out.mileage.textContent     = fmt(mileage) + ' ' + units.mileage.unit;
+      out.consumption.textContent = consumption.toLocaleString('ru-RU') + ' ' + units.consumption.unit;
+
+      var petrolL   = mileage * consumption / 100;        // литров бензина в месяц
+      var gasL      = petrolL * cfg.gasExtra;             // газа уходит больше
+      var petrolCost = petrolL * petrolPrice;
+      var gasCost    = gasL * cfg.gasPrice;
+
+      out.fuel.innerHTML   = pair(fmtL, gasL);
+      out.petrol.innerHTML = pair(fmtRub, petrolCost);
+      out.gas.innerHTML    = pair(fmtRub, gasCost);
+      out.save.innerHTML   = pair(fmtRub, petrolCost - gasCost);
+    }
+
+    Object.keys(inputs).forEach(function (key) {
+      inputs[key].addEventListener('input', recalc);
+    });
+    recalc();
+  }
+
   function wireTerms() {
     /* Подсказка выравнена по левому краю слова. Если слово стоит у правого
        края экрана, плашка вылезала бы за него — сдвигаем ровно настолько,
