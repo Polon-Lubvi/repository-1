@@ -66,8 +66,8 @@ window.CFG = {
          на газу расход больше, чем на бензине (обычно 1.1–1.2). --- */
   calc: {
     mileage:     { min: 500, max: 6000, step: 100, value: 2000 },   // км/мес
-    consumption: { min: 5,   max: 20,   step: 0.5, value: 10 },     // л/100км на бензине
-    petrolPrice: { min: 40,  max: 80,   step: 1,   value: 58 },     // руб/л бензин
+    consumption: { min: 5,   max: 30,   step: 0.5, value: 10 },     // л/100км на бензине
+    petrolPrice: { min: 40,  max: 110,  step: 1,   value: 58 },     // руб/л бензин
     gasPrice: 25,     // руб/л газ (пропан-бутан)
     gasExtra: 1.1,    // на газу расход на 10% больше литров, чем на бензине
   },

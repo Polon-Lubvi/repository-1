@@ -1211,7 +1211,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
 
 .calc__note { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.5; }
-.calc__cta { width: 100%; justify-content: center; }
+.calc__cta { justify-self: center; }
 
 @media (max-width: 480px) {
   .calc__row { flex-direction: column; align-items: flex-start; gap: 2px; }
