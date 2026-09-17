@@ -222,6 +222,23 @@
   }
 
   /* =====================  БЛОК 1 — Первый экран  ===================== */
+  /* Вымпел «Хорошее место» Яндекс.Карт. Картинка официальная, поэтому
+     ни цвет, ни надписи не трогаем — только вешаем и масштабируем.
+     Показывается, если заполнен reviews.award с полем image. */
+  function awardFlag() {
+    var a = (S.reviews && S.reviews.award) || null;
+    if (!a || !a.image) return '';
+    var href = (C.yandex && C.yandex.org) || '';
+    var alt = a.title + (a.note ? ', ' + a.note : '');
+    /* без loading="lazy": вымпел всегда на первом экране, ленивая
+       загрузка только задержала бы его появление */
+    var img = '<img src="' + esc(a.image) + '" alt="' + esc(alt) + '" width="295" height="622">';
+    return href
+      ? '<a class="hero__award" href="' + esc(href) + '" target="_blank" rel="noopener" ' +
+        'title="' + esc(alt) + '">' + img + '</a>'
+      : '<div class="hero__award">' + img + '</div>';
+  }
+
   function renderHero() {
     var h = S.hero;
 
@@ -247,6 +264,9 @@
         '<div class="scene__wall"></div>' +
         '<div class="scene__shade"></div>' +
       '</div>' +
+
+      /* вымпел награды Яндекс.Карт — свисает из-под шапки справа */
+      awardFlag() +
 
       /* слой 2 — контент, две симметричные колонки */
       '<div class="wrap hero__inner">' +
@@ -587,25 +607,11 @@
       '</a>';
     }
 
-    /* Награда Яндекс.Карт «Хорошее место»: показывается, только если
-       заполнен reviews.award. Ссылка ведёт на карточку организации,
-       где награду видно. */
-    function awardBadge(a, link) {
-      if (!a || !a.title) return '';
-      var tag = link ? 'a' : 'span';
-      return '<' + tag + ' class="award"' +
-        (link ? ' href="' + esc(link) + '" target="_blank" rel="noopener"' : '') + '>' +
-        ic('award', { size: 20 }) +
-        '<span>' + esc(a.title) +
-          (a.note ? '<i>' + esc(a.note) + '</i>' : '') +
-        '</span>' +
-      '</' + tag + '>';
-    }
-
+    /* Награда «Хорошее место» здесь не дублируется: она висит вымпелом
+       на первом экране, см. awardFlag(). */
     var ratings = '<div class="reviews__ratings">' +
       ratingCard(r.rating, org) +
       (r.ratingAvito && avitoUrl ? ratingCard(r.ratingAvito, avitoUrl) : '') +
-      awardBadge(r.award, org) +
     '</div>';
 
     /* На сайте показываем только отзывы на пять звёзд — так просил

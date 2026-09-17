@@ -10,9 +10,12 @@
 .hero {
   /* Первый экран чёрный. Переменные переопределены прямо на секции:
      всё, что внутри, перекрашивается само — отдельных правил на каждый
-     элемент не нужно. Красный здесь светлее основного: тёмный
-     #c0221c на чёрном не читается. Контраст к чёрному: акцент 6,9:1,
-     выделение в заголовке 9,2:1, сноски 7,5:1. */
+     элемент не нужно. Красный здесь чистый, без розовизны: светлеть
+     ему некуда — светлее он уходит в лососевый, поэтому берём
+     насыщенный тон и держим его на чёрном. Выделение в заголовке —
+     тот же красный, что у пина Яндекс.Карт на вымполе награды.
+     Контраст к чёрному: акцент 5,6:1, выделение 5,3:1, сноски 7,5:1.
+     Всё выше порога 4,5:1 для обычного текста. */
   --bg:            #000000;
   --bg-elevated:   #151110;
   --line:          #2a2220;
@@ -20,11 +23,11 @@
   --text:          #ffffff;
   --text-muted:    #d4c7c5;
   --text-dim:      #a89694;
-  --accent:        #ff5c4d;
-  --accent-hot:    #ff7466;
-  --accent-bright: #ff8a7d;
-  --accent-soft:   rgba(255, 92, 77, .14);
-  --green-line:    rgba(47, 191, 106, .5);
+  --accent:        #ff2a18;
+  --accent-hot:    #ff4433;
+  --accent-bright: #ff1200;
+  --accent-soft:   rgba(255, 42, 24, .14);
+  --accent-line:   rgba(255, 42, 24, .5);
   --brick:         #181413;
   --brick-deep:    #000000;
 
@@ -67,6 +70,47 @@
     linear-gradient(180deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.3) 18%, rgba(0,0,0,.36) 72%, rgba(0,0,0,.96) 100%);
 }
 
+/* ---------- вымпел награды «Хорошее место» ----------
+   Свисает из-под шапки у правого края. Сам первый экран уезжает под
+   шапку (margin-top: -header-h), поэтому отсчёт идёт от --header-h —
+   иначе вымпел спрятался бы за шапкой. Картинка официальная: её
+   нельзя перекрашивать, поэтому никаких фильтров, только тень. */
+.hero {
+  --award-w: clamp(58px, 6.5vw, 96px);
+}
+.hero__award {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--header-h) - 6px);
+  right: var(--pad);
+  width: var(--award-w);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .45));
+  transition: transform .2s ease;
+}
+.hero__award img { width: 100%; height: auto; }
+a.hero__award:hover,
+a.hero__award:focus-visible { transform: translateY(3px); }
+
+/* Под вымпел резервируется место, иначе заголовок уезжает под него.
+   На широком экране — поле справа у заголовка, на телефоне заголовок
+   центрован, поэтому поле не поможет: там вымпел просто висит выше
+   текста, и первый экран начинается ниже. */
+@media (min-width: 1024px) {
+  .hero__head { padding-right: calc(var(--award-w) + 24px); }
+}
+@media (max-width: 1023px) {
+  .hero__award {
+    top: calc(var(--header-h) + 2px);
+    right: 12px;
+    width: 46px;
+  }
+  .hero { padding-block: calc(var(--header-h) + 112px) 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__award { transition: none; }
+  a.hero__award:hover { transform: none; }
+}
+
 /* ---------- контент: заголовок на всю ширину, под ним текст и фото ---------- */
 .hero__inner {
   position: relative;
@@ -101,10 +145,10 @@
 }
 .hero .btn--cta:hover,
 .hero .btn--cta:focus-visible {
-  background: #ffa79c;
-  border-color: #ffa79c;
+  background: #ff4433;
+  border-color: #ff4433;
   color: #2a0806;
-  box-shadow: 0 0 0 4px rgba(255, 138, 125, .22);
+  box-shadow: 0 0 0 4px rgba(255, 42, 24, .3);
 }
 .hero__engines {
   display: block;
@@ -132,7 +176,7 @@
   letter-spacing: -0.028em;
   color: var(--accent);
 }
-.hero__term a { color: inherit; border-bottom: 1px solid var(--green-line); }
+.hero__term a { color: inherit; border-bottom: 1px solid var(--accent-line); }
 .hero__term a:hover { border-bottom-color: var(--accent-hot); }
 
 /* мини-хуки. Слева — точка вместо иконки. */
@@ -206,7 +250,7 @@
   gap: 8px;
   width: 100%; height: 100%;
   padding: 24px;
-  border: 1px dashed var(--green-line);
+  border: 1px dashed var(--accent-line);
   border-radius: var(--radius);
   background: var(--accent-soft);
   text-align: center;
@@ -777,14 +821,14 @@
   border-radius: var(--radius);
   background: var(--bg-elevated);
 }
-.warranty__card.is-good { border-color: var(--green-line); background: var(--green-soft); }
+.warranty__card.is-good { border-color: var(--accent-line); background: var(--accent-soft); }
 .warranty__type { display: block; font-size: clamp(1.05rem, 1.5vw, 1.25rem); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
 .warranty__km {
   display: block; margin-top: 8px;
   font-size: clamp(1.8rem, 3vw, 2.5rem);
   font-weight: 800; letter-spacing: -0.04em;
 }
-.warranty__card.is-good .warranty__km { color: var(--green); }
+.warranty__card.is-good .warranty__km { color: var(--accent); }
 .warranty__or { display: block; margin-top: 4px; font-size: var(--fs-sm); color: var(--text-dim); }
 
 
@@ -850,7 +894,7 @@
 .not__item svg { flex-shrink: 0; margin-top: 4px; color: var(--text-dim); }
 .not__item b { font-weight: 600; color: var(--text); }
 .not__item span { color: var(--text-muted); }
-.not__item a { color: var(--accent); border-bottom: 1px solid var(--green-line); }
+.not__item a { color: var(--accent); border-bottom: 1px solid var(--accent-line); }
 .not__item a:hover { border-bottom-color: var(--accent-hot); }
 
 /* =====================================================================
@@ -1113,26 +1157,6 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .cpill--viber svg { color: #7360f2; }
 .cpill--max svg { color: #5b6ef5; }
 
-/* Награда Яндекс.Карт «Хорошее место»: плашка рядом с рейтингом.
-   Цвет — золотой, как у звёзд, а не фирменный: это чужая награда,
-   и она не должна выглядеть частью брендинга сервиса. */
-.award {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px 7px 10px;
-  border: 1px solid rgba(232, 163, 23, .45);
-  border-radius: var(--radius-pill);
-  background: rgba(232, 163, 23, .10);
-  color: var(--text);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  line-height: 1.25;
-  text-decoration: none;
-}
-.award svg { color: var(--star); flex: none; }
-.award i { display: block; font-style: normal; font-weight: 500; color: var(--text-dim); }
-a.award:hover { border-color: var(--star); background: rgba(232, 163, 23, .18); }
 .cpill--ya svg { color: var(--star); }
 
 /* ---------- дата и сноска в блоке отзывов ---------- */
@@ -1140,12 +1164,12 @@ a.award:hover { border-color: var(--star); background: rgba(232, 163, 23, .18); 
 .reviews__note {
   margin-top: 18px;
   padding-left: 14px;
-  border-left: 2px solid var(--green-line);
+  border-left: 2px solid var(--accent-line);
   font-size: var(--fs-sm);
   line-height: 1.55;
   color: var(--text-muted);
 }
-.reviews__note a { color: var(--accent); border-bottom: 1px solid var(--green-line); }
+.reviews__note a { color: var(--accent); border-bottom: 1px solid var(--accent-line); }
 .reviews__note a:hover { border-bottom-color: var(--accent); }
 
 /* ---------- время в пути: строка района кликабельна ---------- */
@@ -1208,7 +1232,7 @@ a.award:hover { border-color: var(--star); background: rgba(232, 163, 23, .18); 
 .footer__disc {
   margin-top: clamp(24px, 3vw, 32px);
   padding-left: 14px;
-  border-left: 2px solid var(--green-line);
+  border-left: 2px solid var(--accent-line);
   font-size: var(--fs-xs);
   line-height: 1.6;
   color: var(--text-muted);
@@ -1288,16 +1312,19 @@ a.award:hover { border-color: var(--star); background: rgba(232, 163, 23, .18); 
 .calc__row span { color: var(--text-muted); }
 .calc__row b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
 
+/* Плашка выгоды: сама красная, как весь сайт, а сумма внутри —
+   зелёная. Зелёный тут единственный на странице и работает как
+   смысл «это ваши деньги», а не как второй фирменный цвет. */
 .calc__save {
   margin-top: 4px;
   padding: 16px 18px;
   border-radius: var(--radius-sm);
-  background: var(--green-soft);
-  border: 1px solid var(--green-line);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
   display: flex; flex-direction: column; gap: 6px;
 }
-.calc__save span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
-.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.calc__save span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
 
 .calc__note { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.5; }
 .calc__cta { justify-self: center; }
