@@ -305,7 +305,7 @@
       '<div class="clients__strip">' +
         '<div class="clients__track" id="clients-track">' + group + group + '</div>' +
       '</div>' +
-      '<p class="clients__note wrap">' + esc(c.note) + '</p>' +
+      (c.note ? '<p class="clients__note wrap">' + esc(c.note) + '</p>' : '') +
     '</section>';
   }
 
@@ -762,7 +762,7 @@
 
       '</div>' +
 
-      '<p class="footer__disc">' + esc(f.disclaimer) + '</p>' +
+      (f.disclaimer ? '<p class="footer__disc">' + esc(f.disclaimer) + '</p>' : '') +
 
       '<div class="footer__bottom">' +
         '<span>© ' + new Date().getFullYear() + ' ' + esc(legal.orgName || S.brand.name) +
