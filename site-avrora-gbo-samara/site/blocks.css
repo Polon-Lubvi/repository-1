@@ -1192,3 +1192,108 @@ a.review:hover .review__foot { color: var(--text-muted); }
   max-width: 78ch;
 }
 .footer__src { color: var(--text-dim); }
+
+/* =====================================================================
+   БЛОК 4.5 — Калькулятор экономии на газе.
+   Перенесён из Site_CentrGBO_SPb и перекрашен под светлую тему:
+   там ползунок и тени были рассчитаны на чёрный фон.
+   Диапазоны и цены — в config.js, блок calc.
+   ===================================================================== */
+.calc { background: var(--bg); padding-block: clamp(44px, 6vw, 80px); border-top: 1px solid var(--line); }
+.calc__title { font-size: clamp(1.5rem, 2.6vw, 2.6rem); font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
+.calc__lead { margin-top: 10px; font-size: var(--fs-lead); color: var(--text-muted); max-width: 56ch; }
+
+.calc__grid { display: grid; gap: clamp(16px, 2.4vw, 24px); margin-top: clamp(22px, 3vw, 32px); }
+@media (min-width: 900px) { .calc__grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+.calc__sliders,
+.calc__result {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+  padding: clamp(20px, 2.6vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+/* ---------- ползунок ---------- */
+.calc__field-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font-size: var(--fs-sm); color: var(--text-muted);
+}
+.calc__field-head b { font-size: var(--fs-body); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.calc__range {
+  width: 100%;
+  margin-top: 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  outline: none;
+}
+.calc__range:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.calc__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-glow), 0 2px 6px rgba(12, 44, 26, .22);
+  cursor: pointer;
+  transition: box-shadow .15s;
+}
+.calc__range::-webkit-slider-thumb:hover { box-shadow: 0 0 0 9px var(--accent-glow), 0 2px 6px rgba(12, 44, 26, .28); }
+.calc__range::-moz-range-track { height: 6px; border-radius: var(--radius-pill); background: var(--line-strong); }
+.calc__range::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-glow), 0 2px 6px rgba(12, 44, 26, .22);
+  cursor: pointer;
+}
+
+/* ---------- результат ---------- */
+.calc__row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+}
+.calc__row span { color: var(--text-muted); }
+.calc__row b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+
+.calc__save {
+  margin-top: 4px;
+  padding: 16px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  border: 1px solid var(--green-line);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.calc__save span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
+.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+/* цена бензина ниже цены газа — плашка гаснет, а не показывает минус */
+.calc.is-nogain .calc__save { background: var(--bg-elevated); border-color: var(--line); }
+.calc.is-nogain .calc__save b { font-size: var(--fs-body); font-weight: 600; color: var(--text-muted); }
+
+.calc__note { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.5; }
+.calc__cta { justify-self: center; }
+
+/* палец крупнее курсора: на сенсорных экранах ползунок толще,
+   а бегунок с 22 до 28 px — иначе в него неудобно попадать */
+@media (hover: none), (pointer: coarse) {
+  .calc__range { height: 8px; }
+  .calc__range::-webkit-slider-thumb { width: 28px; height: 28px; }
+  .calc__range::-moz-range-thumb { width: 28px; height: 28px; }
+}
+
+/* узкий экран: подпись и число в столбик, иначе строка ломается пополам */
+@media (max-width: 480px) {
+  .calc__row { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .calc__row b { text-align: left; }
+  .calc__cta { width: 100%; }
+}
