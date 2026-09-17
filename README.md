@@ -17,3 +17,4 @@
 - «Дай газу», Москва — https://polon-lubvi.github.io/repository-1/shablon-day-gazu/
 - «Центр ГБО», Санкт-Петербург — https://polon-lubvi.github.io/repository-1/site-centr-gbo-spb/site/index.html
 - «Установка ГБО», Москва — https://polon-lubvi.github.io/repository-1/ustanovka-gbo-msk/
+- «РусСервис», Балашиха — https://polon-lubvi.github.io/repository-1/shablon-rus-servis/
