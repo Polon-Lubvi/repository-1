@@ -99,12 +99,17 @@ a.hero__award:focus-visible { transform: translateY(3px); }
   .hero__head { padding-right: calc(var(--award-w) + 24px); }
 }
 @media (max-width: 1023px) {
+  .hero {
+    --award-w: clamp(46px, 8vw, 72px);
+    /* Отступ считается от высоты вымпела, а не магическим числом:
+       пропорция картинки 295/622, отсюда 2.11. Меняешь ширину —
+       заголовок сам отодвигается ровно настолько, сколько надо. */
+    padding-block: calc(var(--header-h) + var(--award-w) * 2.11 + 22px) 56px;
+  }
   .hero__award {
     top: calc(var(--header-h) + 2px);
-    right: 12px;
-    width: 46px;
+    right: clamp(12px, 3vw, 28px);
   }
-  .hero { padding-block: calc(var(--header-h) + 112px) 56px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero__award { transition: none; }
