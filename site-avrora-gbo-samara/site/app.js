@@ -16,7 +16,6 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-  function fmt(n) { return Math.round(n).toLocaleString('ru-RU'); }
 
   /* Ссылки в мессенджеры. Без номера в конфиге — «мёртвая» ссылка,
      чтобы это было заметно, а не вело в никуда. */
@@ -82,17 +81,6 @@
         (x.cap ? '<figcaption class="shot__cap">' + esc(x.cap) + '</figcaption>' : '') +
       '</figure>';
     }).join('') + '</div>';
-  }
-
-  /* Счётчик установок: базовое + floor(прошло_суток × прирост) — ТЗ блок 1.
-     Не используется, пока в content.js задан hero.counterValue:
-     выдуманную цифру установок заменили реальным рейтингом с Карт. */
-  function installCount() {
-    var c = C.counter;
-    if (!c) return 0;
-    var since = new Date(c.since + 'T00:00:00');
-    var days = Math.max(0, Math.floor((Date.now() - since.getTime()) / 86400000));
-    return c.base + Math.floor(days * c.perDay);
   }
 
   /* Смена текста «роликом»: старая строка уезжает вверх, новая приходит снизу.
@@ -273,8 +261,8 @@
           '<div class="hero__actions">' +
             '<a class="btn btn--cta" href="' + wa + '"' + deadAttr(wa) + '>' +
               esc(h.cta) + ic('arrow', { size: 18 }) + '</a>' +
-            (h.counterValue || C.counter ? '<p class="hero__counter">' +
-              '<b id="hero-counter">' + (h.counterValue ? esc(h.counterValue) : fmt(installCount())) + '</b>' +
+            (h.counterValue ? '<p class="hero__counter">' +
+              '<b id="hero-counter">' + esc(h.counterValue) + '</b>' +
               '<span>' + esc(h.counterLabel) + '</span>' +
             '</p>' : '') +
           '</div>' +
