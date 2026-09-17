@@ -20,7 +20,8 @@ window.CFG = {
   yandex: {
     org:     'https://yandex.ru/maps/org/avroraavtoremont/1208421304/',
     reviews: 'https://yandex.ru/maps/org/avroraavtoremont/1208421304/reviews/',
-    route:   'https://yandex.ru/maps/?rtext=~53.210291%2C50.187115&rtt=auto',
+    route:   'https://yandex.ru/maps/51/samara/?mode=routes&rtext=~53.210291%2C50.187115' +
+             '&rtt=auto&ll=50.187115%2C53.210291&z=15',
     prices:  'https://yandex.ru/maps/org/avroraavtoremont/1208421304/menu/',
   },
 

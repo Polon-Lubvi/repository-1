@@ -798,11 +798,18 @@
     /* Первый экран чёрный, остальная страница белая. Пока шапка висит
        над первым экраном, она держит тёмное оформление, дальше — светлое.
        Считаем по нижней границе экрана, а не по фиксированной высоте. */
+    /* Плавающая кнопка WhatsApp на первом экране скрыта: она попадала
+       ровно на правый край большой кнопки «Записаться» и перекрывала
+       её со стрелкой. Появляется, когда первый экран уезжает вверх. */
+    var waFloat = document.querySelector('.wa-float');
     var onScroll = function () {
       header.classList.toggle('is-scrolled', window.scrollY > 12);
       if (hero) {
-        header.classList.toggle('is-on-dark',
-          hero.getBoundingClientRect().bottom > header.offsetHeight / 2);
+        var bottom = hero.getBoundingClientRect().bottom;
+        header.classList.toggle('is-on-dark', bottom > header.offsetHeight / 2);
+        if (waFloat) waFloat.classList.toggle('is-shown', bottom < header.offsetHeight);
+      } else if (waFloat) {
+        waFloat.classList.add('is-shown');
       }
     };
     onScroll();

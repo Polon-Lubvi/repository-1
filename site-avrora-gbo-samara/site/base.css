@@ -322,9 +322,22 @@ a[data-no-phone] { cursor: default; }
   background: var(--wa);
   color: #fff;
   box-shadow: 0 8px 22px rgba(12, 44, 26, .28);
-  transition: background-color .18s ease, transform .18s ease;
+  transition: background-color .18s ease, transform .2s ease,
+              opacity .2s ease, visibility .2s;
+
+  /* Пока виден первый экран, кнопка спрятана: иначе она ложится на
+     правый край кнопки «Записаться» и перекрывает её со стрелкой.
+     Класс is-shown вешает wireHeader при прокрутке. */
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.8);
 }
-.wa-float:hover { background: var(--wa-hover); transform: scale(1.05); }
+.wa-float:hover { background: var(--wa-hover); }
+.wa-float.is-shown { opacity: 1; visibility: visible; transform: none; }
+.wa-float.is-shown:hover { transform: scale(1.05); }
+@media (prefers-reduced-motion: reduce) {
+  .wa-float, .wa-float.is-shown { transform: none; transition: opacity .15s ease; }
+}
 @media (min-width: 900px) { .wa-float { display: none; } }
 
 /* Жирный текст в абзацах — чёрный. На тёмных участках (первый экран,
