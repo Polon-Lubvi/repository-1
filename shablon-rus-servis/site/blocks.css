@@ -10,25 +10,25 @@
 .hero {
   /* Первый экран чёрный. Переменные переопределены прямо на секции:
      всё, что внутри, перекрашивается само — отдельных правил на каждый
-     элемент не нужно. Красный здесь чистый, без розовизны: светлеть
-     ему некуда — светлее он уходит в лососевый, поэтому берём
-     насыщенный тон и держим его на чёрном. Выделение в заголовке —
-     тот же красный, что у пина Яндекс.Карт на вымполе награды.
-     Контраст к чёрному: акцент 5,6:1, выделение 5,3:1, сноски 7,5:1.
-     Всё выше порога 4,5:1 для обычного текста. */
+     элемент не нужно. Красный здесь тот же #c0221c, что и в остальных
+     блоках, — так первый экран не спорит с ними по тону. На чёрном он
+     даёт 3,5:1: для крупного текста порог 3:1, и красным здесь заняты
+     только выделение в заголовке и строка типа транспорта — оба
+     крупные и жирные. Мелкого красного текста на первом экране нет:
+     подпись на плашке-заглушке переведена в серый. */
   --bg:            #000000;
-  --bg-elevated:   #151110;
-  --line:          #2a2220;
-  --line-strong:   #443836;
+  --bg-elevated:   #141414;
+  --line:          #282828;
+  --line-strong:   #424242;
   --text:          #ffffff;
-  --text-muted:    #d4c7c5;
-  --text-dim:      #a89694;
-  --accent:        #ff2a18;
-  --accent-hot:    #ff4433;
-  --accent-bright: #ff1200;
-  --accent-soft:   rgba(255, 42, 24, .14);
-  --accent-line:   rgba(255, 42, 24, .5);
-  --brick:         #181413;
+  --text-muted:    #cfcfcf;
+  --text-dim:      #9e9e9e;
+  --accent:        #c0221c;
+  --accent-hot:    #d62a22;
+  --accent-bright: #c0221c;
+  --accent-soft:   rgba(192, 34, 28, .18);
+  --accent-line:   rgba(192, 34, 28, .55);
+  --brick:         #161616;
   --brick-deep:    #000000;
 
   background: #000;
@@ -58,7 +58,7 @@
   background-color: var(--brick-deep);
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='48'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Crect width='100' height='2'/%3E%3Crect y='24' width='100' height='2'/%3E%3Crect width='2' height='24'/%3E%3Crect x='50' width='2' height='24'/%3E%3Crect x='25' y='24' width='2' height='24'/%3E%3Crect x='75' y='24' width='2' height='24'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(120% 90% at 50% 34%, #1e231f 0%, var(--brick) 46%, var(--brick-deep) 100%);
+    radial-gradient(120% 90% at 50% 34%, #1e1e1e 0%, var(--brick) 46%, var(--brick-deep) 100%);
 }
 
 /* затемнение по краям — чтобы белый текст читался поверх кладки */
@@ -136,19 +136,19 @@ a.hero__award:focus-visible { transform: translateY(3px); }
 .hero .text-accent { color: var(--accent-bright); }
 .hero b, .hero strong { color: inherit; }
 
-/* Кнопка на чёрном: яркая заливка и тёмная подпись.
-   Белым по светло-красному подпись не читалась бы. */
+/* Кнопка на чёрном: заливка тем же красным, что и везде, подпись
+   белая — 6,0:1. Раньше заливка была светлее и подпись тёмная. */
 .hero .btn--cta {
-  background: var(--accent-bright);
-  border-color: var(--accent-bright);
-  color: #2a0806;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 .hero .btn--cta:hover,
 .hero .btn--cta:focus-visible {
-  background: #ff4433;
-  border-color: #ff4433;
-  color: #2a0806;
-  box-shadow: 0 0 0 4px rgba(255, 42, 24, .3);
+  background: var(--accent-hot);
+  border-color: var(--accent-hot);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 4px rgba(214, 42, 34, .35);
 }
 .hero__engines {
   display: block;
@@ -250,14 +250,16 @@ a.hero__award:focus-visible { transform: translateY(3px); }
   gap: 8px;
   width: 100%; height: 100%;
   padding: 24px;
-  border: 1px dashed var(--accent-line);
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius);
-  background: var(--accent-soft);
+  background: var(--bg-elevated);
   text-align: center;
 }
+/* Заглушка временная и ничего не продаёт, поэтому серая и молчаливая:
+   красным она перетягивала внимание с текста. */
 .photo-stub__tag {
   font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--accent);
+  text-transform: uppercase; color: var(--text-dim);
 }
 .photo-stub__text { font-size: var(--fs-sm); line-height: 1.4; max-width: 30ch; color: var(--text-muted); }
 
@@ -821,7 +823,7 @@ a.hero__award:focus-visible { transform: translateY(3px); }
   border-radius: var(--radius);
   background: var(--bg-elevated);
 }
-.warranty__card.is-good { border-color: var(--accent-line); background: var(--accent-soft); }
+.warranty__card.is-good { border-color: var(--accent-line); }
 .warranty__type { display: block; font-size: clamp(1.05rem, 1.5vw, 1.25rem); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
 .warranty__km {
   display: block; margin-top: 8px;

@@ -172,17 +172,20 @@ a[data-no-phone] { cursor: default; }
 }
 .header.is-on-dark.is-scrolled::before {
   background: linear-gradient(180deg, #000 0%, rgba(0,0,0,.92) 60%, rgba(0,0,0,.35) 100%);
-  border-bottom: 1px solid #2a2220;
+  border-bottom: 1px solid #282828;
 }
+/* В шапке красным набраны телефон и кнопка «Связаться» — это мелкий
+   текст, и основной #c0221c на чёрном дал бы 3,5:1. Поэтому здесь
+   тон на ступень светлее: 5,0:1, тот же красный, но читаемый. */
 .header.is-on-dark .header__inner {
   --text:        #ffffff;
-  --text-muted:  #d4c7c5;
-  --text-dim:    #a89694;
-  --line:        #322826;
-  --line-strong: #443836;
-  --accent:      #ff2a18;
-  --accent-soft: rgba(255, 42, 24, .16);
-  --accent-line: rgba(255, 42, 24, .5);
+  --text-muted:  #cfcfcf;
+  --text-dim:    #9e9e9e;
+  --line:        #303030;
+  --line-strong: #424242;
+  --accent:      #e8382f;
+  --accent-soft: rgba(232, 56, 47, .16);
+  --accent-line: rgba(232, 56, 47, .5);
   color: var(--text);
 }
 .header.is-on-dark .header__inner b { color: inherit; }
