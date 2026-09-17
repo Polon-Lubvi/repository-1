@@ -8,6 +8,28 @@
    Света нет — только кладка и затемнение по краям.
    ===================================================================== */
 .hero {
+  /* Первый экран чёрный. Переменные переопределены прямо на секции:
+     всё, что внутри, перекрашивается само — отдельных правил на каждый
+     элемент не нужно. Зелёный здесь светлее основного: тёмно-зелёный
+     #0b7d3e на чёрном не читается. */
+  --bg:            #000000;
+  --bg-elevated:   #121512;
+  --line:          #242a26;
+  --line-strong:   #3a443e;
+  --text:          #ffffff;
+  --text-muted:    #c3d2c9;
+  --text-dim:      #97a9a0;
+  --accent:        #2fbf6a;
+  --accent-hot:    #3ad277;
+  --accent-bright: #45e084;
+  --accent-soft:   rgba(47, 191, 106, .14);
+  --green-line:    rgba(47, 191, 106, .5);
+  --brick:         #151815;
+  --brick-deep:    #000000;
+
+  background: #000;
+  color: var(--text);
+
   position: relative;
   overflow: hidden;
   display: flex;
@@ -31,17 +53,17 @@
   inset: 0;
   background-color: var(--brick-deep);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='48'%3E%3Cg fill='%230c2c1a' fill-opacity='0.07'%3E%3Crect width='100' height='2'/%3E%3Crect y='24' width='100' height='2'/%3E%3Crect width='2' height='24'/%3E%3Crect x='50' width='2' height='24'/%3E%3Crect x='25' y='24' width='2' height='24'/%3E%3Crect x='75' y='24' width='2' height='24'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(120% 90% at 50% 34%, #ffffff 0%, var(--brick) 46%, var(--brick-deep) 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='48'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Crect width='100' height='2'/%3E%3Crect y='24' width='100' height='2'/%3E%3Crect width='2' height='24'/%3E%3Crect x='50' width='2' height='24'/%3E%3Crect x='25' y='24' width='2' height='24'/%3E%3Crect x='75' y='24' width='2' height='24'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 34%, #1e231f 0%, var(--brick) 46%, var(--brick-deep) 100%);
 }
 
-/* высветление по краям — чтобы тёмно-зелёный текст читался */
+/* затемнение по краям — чтобы белый текст читался поверх кладки */
 .scene__shade {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.86) 26%, rgba(255,255,255,.5) 44%, rgba(255,255,255,.34) 60%, rgba(255,255,255,.6) 86%, rgba(255,255,255,.94) 100%),
-    linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.3) 18%, rgba(255,255,255,.38) 72%, rgba(255,255,255,.97) 100%);
+    linear-gradient(90deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.84) 26%, rgba(0,0,0,.5) 44%, rgba(0,0,0,.34) 60%, rgba(0,0,0,.6) 86%, rgba(0,0,0,.92) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.3) 18%, rgba(0,0,0,.36) 72%, rgba(0,0,0,.96) 100%);
 }
 
 /* ---------- контент: заголовок на всю ширину, под ним текст и фото ---------- */
@@ -61,8 +83,28 @@
   .hero__body { grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 88px); }
 }
 
-/* ---------- заголовок ---------- */
-.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; }
+/* ---------- заголовок ----------
+   На чёрном заголовок белый, зелёным горит только выделение.
+   Глобальное правило «жирный текст — чёрный» здесь снимается:
+   чёрное на чёрном не видно. */
+.hero__title { font-size: var(--fs-display); letter-spacing: -0.038em; text-wrap: balance; color: var(--text); }
+.hero .text-accent { color: var(--accent-bright); }
+.hero b, .hero strong { color: inherit; }
+
+/* Кнопка на чёрном: яркая заливка и тёмная подпись.
+   Белым по светло-зелёному подпись не читалась бы. */
+.hero .btn--cta {
+  background: var(--accent-bright);
+  border-color: var(--accent-bright);
+  color: #06220f;
+}
+.hero .btn--cta:hover,
+.hero .btn--cta:focus-visible {
+  background: #60ec98;
+  border-color: #60ec98;
+  color: #06220f;
+  box-shadow: 0 0 0 4px rgba(69, 224, 132, .22);
+}
 .hero__engines {
   display: block;
   margin-top: 16px;
@@ -92,10 +134,16 @@
 .hero__term a { color: inherit; border-bottom: 1px solid var(--green-line); }
 .hero__term a:hover { border-bottom-color: var(--accent-hot); }
 
-/* мини-хуки */
+/* мини-хуки. Слева — точка вместо иконки. */
 .hero__hooks { display: grid; gap: 13px; margin-top: 26px; }
 .hero__hook { display: flex; gap: 11px; align-items: flex-start; }
-.hero__hook svg { flex-shrink: 0; margin-top: 3px; color: var(--accent-hot); }
+.hero__dot {
+  flex-shrink: 0;
+  width: 7px; height: 7px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+}
 .hero__hook b { font-weight: 600; letter-spacing: -0.01em; }
 .hero__hook span { color: var(--text-muted); }
 .hero__hook p { font-size: var(--fs-sm); line-height: 1.45; }
@@ -688,16 +736,18 @@
 .acc__panel { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
 .acc__inner { padding-bottom: 22px; display: grid; gap: 12px; }
 .acc__list { display: grid; gap: 10px; }
-.acc__list li { display: flex; gap: 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-muted); }
-.acc__list svg { flex-shrink: 0; margin-top: 3px; color: var(--accent-hot); }
-.acc__list b { color: var(--text); font-weight: 600; }
-.acc__text { font-size: var(--fs-sm); line-height: 1.6; color: var(--text-muted); }
+/* Текст внутри раскрывающихся пунктов — чёрный, как просил заказчик.
+   Зелёными остаются сами вопросы и галочки. */
+.acc__list li { display: flex; gap: 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); }
+.acc__list svg { flex-shrink: 0; margin-top: 3px; color: var(--accent); }
+.acc__list b { color: var(--ink); font-weight: 600; }
+.acc__text { font-size: var(--fs-sm); line-height: 1.6; color: var(--ink); }
 .acc__closing {
   padding-left: 14px;
   border-left: 2px solid var(--accent);
   font-size: var(--fs-sm);
   line-height: 1.5;
-  color: var(--text);
+  color: var(--ink);
 }
 @media (prefers-reduced-motion: reduce) { .acc__panel { transition: none; } }
 
@@ -901,8 +951,8 @@ a.review:hover .review__foot { color: var(--text-muted); }
 
 /* Список-«гармошка»: вопрос виден всегда, ответ раскрывается по клику
    на строку. Поведение и стрелка — общие с блоком 5 (класс .acc). */
+/* Раньше блок был ограничен 880 px; заказчик попросил во всю страницу */
 .faq__acc {
-  max-width: 880px;
   margin-top: clamp(28px, 4vw, 44px);
 }
 .faq__acc .acc__head {
@@ -933,9 +983,9 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .loc__grid { display: grid; gap: clamp(20px, 3vw, 32px); margin-top: clamp(28px, 4vw, 44px); }
 @media (min-width: 1000px) { .loc__grid { grid-template-columns: 1.2fr 1fr; align-items: start; } }
 
-/* Карта — статичная картинка (OpenStreetMap) со ссылкой на Яндекс.Карты.
-   Встраиваемый iframe Яндекса не отрисовывался, поэтому здесь картинка:
-   она видна всегда, а по клику открывается настоящая карта. */
+/* Карта — живой виджет Яндекс.Карт с карточкой организации: его можно
+   двигать, приближать, смотреть отзывы и строить маршрут прямо здесь.
+   Статичная картинка осталась запасным вариантом (.loc__map--static). */
 .loc__map {
   position: relative;
   display: block;
@@ -944,8 +994,14 @@ a.review:hover .review__foot { color: var(--text-muted); }
   overflow: hidden;
   background: var(--bg-elevated);
 }
+.loc__map-frame {
+  display: block;
+  width: 100%;
+  height: clamp(340px, 52vh, 560px);
+  border: 0;
+}
 .loc__map-img { display: block; width: 100%; height: auto; }
-.loc__map:hover { border-color: var(--text-dim); }
+.loc__map--static:hover { border-color: var(--accent); }
 
 /* ---------- лента фото (блок 9 и блок 8): листается влево-вправо ---------- */
 .strip { position: relative; margin-top: 14px; }
@@ -1050,7 +1106,9 @@ a.review:hover .review__foot { color: var(--text-muted); }
   background: var(--bg-elevated);
   display: grid;
   gap: 18px;
-  justify-items: start;
+  /* заголовок, кнопка и сноска — по центру плашки */
+  justify-items: center;
+  text-align: center;
 }
 .form__lead {
   font-size: clamp(1.4rem, 2.4vw, 2.4rem);

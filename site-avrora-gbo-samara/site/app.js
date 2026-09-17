@@ -255,8 +255,10 @@
   function renderHero() {
     var h = S.hero;
 
+    /* Слева от строки — простая точка, а не иконка: так просил заказчик.
+       Поле icon в content.js осталось, но больше не отрисовывается. */
     var hooks = h.hooks.map(function (x) {
-      return '<li class="hero__hook">' + ic(x.icon, { size: 18 }) +
+      return '<li class="hero__hook"><span class="hero__dot" aria-hidden="true"></span>' +
         '<p><b>' + esc(x.title) + '</b> <span>' + esc(x.text) + '</span></p></li>';
     }).join('');
 
@@ -642,6 +644,24 @@
     '</div></section>';
   }
 
+  /* Карта. Если задан mapEmbed — живой виджет Яндекс.Карт: его можно
+     двигать, приближать, смотреть карточку организации и строить маршрут.
+     Если виджета нет, остаётся старая статичная картинка со ссылкой. */
+  function mapHtml(l, y) {
+    if (l.mapEmbed) {
+      return '<div class="loc__map">' +
+        '<iframe class="loc__map-frame" src="' + esc(l.mapEmbed) + '" ' +
+          'title="Карта: ' + esc(l.address) + '" loading="lazy" ' +
+          'allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+      '</div>';
+    }
+    return '<a class="loc__map loc__map--static" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
+        'aria-label="Открыть в Яндекс.Картах">' +
+        '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
+          'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
+      '</a>';
+  }
+
   /* =====================  БЛОК 9 — Как доехать  ===================== */
   function renderLocation() {
     var l = S.location;
@@ -670,13 +690,7 @@
       '<h2 class="loc__lead">' + esc(l.lead) + '</h2>' +
       '<div class="loc__grid">' +
 
-        '<div>' +
-          '<a class="loc__map" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
-            'aria-label="Открыть в Яндекс.Картах">' +
-            '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
-              'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
-          '</a>' +
-        '</div>' +
+        '<div>' + mapHtml(l, y) + '</div>' +
 
         '<div class="loc__info">' +
           '<p class="loc__addr">' + esc(l.address) + '</p>' +
@@ -838,7 +852,17 @@
   /* ---------- шапка ---------- */
   function wireHeader() {
     var header = document.getElementById('site-header');
-    var onScroll = function () { header.classList.toggle('is-scrolled', window.scrollY > 12); };
+    var hero = document.querySelector('.hero');
+    /* Первый экран чёрный, остальная страница белая. Пока шапка висит
+       над первым экраном, она держит тёмное оформление, дальше — светлое.
+       Считаем по нижней границе экрана, а не по фиксированной высоте. */
+    var onScroll = function () {
+      header.classList.toggle('is-scrolled', window.scrollY > 12);
+      if (hero) {
+        header.classList.toggle('is-on-dark',
+          hero.getBoundingClientRect().bottom > header.offsetHeight / 2);
+      }
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 

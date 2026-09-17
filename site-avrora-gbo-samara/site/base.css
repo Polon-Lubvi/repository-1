@@ -163,6 +163,30 @@ a[data-no-phone] { cursor: default; }
   border-bottom: 1px solid var(--line);
 }
 
+/* Пока шапка висит над чёрным первым экраном, она перекрашивается
+   в тёмную. Переменные переопределяются на .header__inner, а не на
+   .header, — иначе за ними ушло бы и выпадающее меню, которое остаётся
+   светлой панелью. */
+.header.is-on-dark::before {
+  background: linear-gradient(180deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 48%, transparent 100%);
+}
+.header.is-on-dark.is-scrolled::before {
+  background: linear-gradient(180deg, #000 0%, rgba(0,0,0,.92) 60%, rgba(0,0,0,.35) 100%);
+  border-bottom: 1px solid #242a26;
+}
+.header.is-on-dark .header__inner {
+  --text:        #ffffff;
+  --text-muted:  #c3d2c9;
+  --text-dim:    #97a9a0;
+  --line:        #2a322d;
+  --line-strong: #3a443e;
+  --accent:      #2fbf6a;
+  --accent-soft: rgba(47, 191, 106, .16);
+  --green-line:  rgba(47, 191, 106, .5);
+  color: var(--text);
+}
+.header.is-on-dark .header__inner b { color: inherit; }
+
 .header__inner {
   position: relative;
   display: flex;
@@ -191,10 +215,15 @@ a[data-no-phone] { cursor: default; }
   background: #fff;
   object-fit: cover;
 }
-.logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
-.logo__sub { display: none; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
+.logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; overflow: hidden; }
+/* nowrap + overflow: hidden — иначе при нехватке места ячейка сжимается
+   почти в ноль, а текст вылезает поверх меню */
+.logo__title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logo__sub { display: none; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 560px) { .logo__sub { display: block; } }
+/* 1280–1439 px: меню уже показано, но места на подпись под названием
+   ещё нет — убираем её, иначе она поджимает пункты меню */
+@media (min-width: 1280px) and (max-width: 1439px) { .logo__sub { display: none; } }
 
 /* меню строго по центру шапки, независимо от ширины лого и правого блока */
 .nav {
@@ -231,9 +260,11 @@ a[data-no-phone] { cursor: default; }
 
 @media (min-width: 700px)  { .header__phone { display: flex; } }
 @media (min-width: 900px)  { .header__hours { display: flex; } .header__cta { display: inline-flex; } }
-@media (min-width: 1080px) {
+@media (min-width: 1280px) {
   .nav { display: flex; }
   .burger { display: none; }
+  /* название сервиса не сжимаем: пусть переносится меню, а не бренд */
+  .logo { flex-shrink: 0; }
   /* меню центрируется само — правой группе авто-поле больше не нужно,
      иначе меню уезжает влево от середины */
   .header__side { margin-left: 0; }
@@ -296,10 +327,16 @@ a[data-no-phone] { cursor: default; }
 .wa-float:hover { background: var(--wa-hover); transform: scale(1.05); }
 @media (min-width: 900px) { .wa-float { display: none; } }
 
-/* Выделение внутри заголовка — ярче самого заголовка.
-   Используется только в крупных h1/h2, поэтому 3,3:1 к белому
-   укладывается в норму для крупного текста. */
-.text-accent { color: var(--accent-bright); }
+/* Жирный текст — чёрный: и выделения внутри заголовков разделов,
+   и обычные <b> в абзацах. На тёмных участках (первый экран, шапка)
+   это правило перебивается локально, иначе текст пропал бы на фоне. */
+b, strong,
+.text-accent { color: var(--ink); }
+
+/* Мелкие подписи-рубрикаторы набраны тем же <b>, но это не выделение,
+   а служебная строка — оставляем её приглушённой. */
+.loc__block b,
+.footer__col > b { color: var(--text-dim); }
 
 /* ---------- утилиты ---------- */
 .visually-hidden {
