@@ -587,9 +587,25 @@
       '</a>';
     }
 
+    /* Награда Яндекс.Карт «Хорошее место»: показывается, только если
+       заполнен reviews.award. Ссылка ведёт на карточку организации,
+       где награду видно. */
+    function awardBadge(a, link) {
+      if (!a || !a.title) return '';
+      var tag = link ? 'a' : 'span';
+      return '<' + tag + ' class="award"' +
+        (link ? ' href="' + esc(link) + '" target="_blank" rel="noopener"' : '') + '>' +
+        ic('award', { size: 20 }) +
+        '<span>' + esc(a.title) +
+          (a.note ? '<i>' + esc(a.note) + '</i>' : '') +
+        '</span>' +
+      '</' + tag + '>';
+    }
+
     var ratings = '<div class="reviews__ratings">' +
       ratingCard(r.rating, org) +
       (r.ratingAvito && avitoUrl ? ratingCard(r.ratingAvito, avitoUrl) : '') +
+      awardBadge(r.award, org) +
     '</div>';
 
     /* На сайте показываем только отзывы на пять звёзд — так просил

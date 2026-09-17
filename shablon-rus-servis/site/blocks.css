@@ -10,22 +10,22 @@
 .hero {
   /* Первый экран чёрный. Переменные переопределены прямо на секции:
      всё, что внутри, перекрашивается само — отдельных правил на каждый
-     элемент не нужно. Оранжевый здесь светлее основного: тёмный
-     #c2410c на чёрном не читается. Контраст к чёрному: акцент 7,5:1,
-     выделение в заголовке 10,4:1, сноски 7,8:1. */
+     элемент не нужно. Красный здесь светлее основного: тёмный
+     #c0221c на чёрном не читается. Контраст к чёрному: акцент 6,9:1,
+     выделение в заголовке 9,2:1, сноски 7,5:1. */
   --bg:            #000000;
-  --bg-elevated:   #15120f;
-  --line:          #2a241f;
-  --line-strong:   #443b33;
+  --bg-elevated:   #151110;
+  --line:          #2a2220;
+  --line-strong:   #443836;
   --text:          #ffffff;
-  --text-muted:    #d6cbc3;
-  --text-dim:      #a89b92;
-  --accent:        #f97316;
-  --accent-hot:    #fb8b3a;
-  --accent-bright: #fda157;
-  --accent-soft:   rgba(249, 115, 22, .14);
+  --text-muted:    #d4c7c5;
+  --text-dim:      #a89694;
+  --accent:        #ff5c4d;
+  --accent-hot:    #ff7466;
+  --accent-bright: #ff8a7d;
+  --accent-soft:   rgba(255, 92, 77, .14);
   --green-line:    rgba(47, 191, 106, .5);
-  --brick:         #181513;
+  --brick:         #181413;
   --brick-deep:    #000000;
 
   background: #000;
@@ -93,18 +93,18 @@
 .hero b, .hero strong { color: inherit; }
 
 /* Кнопка на чёрном: яркая заливка и тёмная подпись.
-   Белым по светло-оранжевому подпись не читалась бы. */
+   Белым по светло-красному подпись не читалась бы. */
 .hero .btn--cta {
   background: var(--accent-bright);
   border-color: var(--accent-bright);
-  color: #2a1206;
+  color: #2a0806;
 }
 .hero .btn--cta:hover,
 .hero .btn--cta:focus-visible {
-  background: #fdba74;
-  border-color: #fdba74;
-  color: #2a1206;
-  box-shadow: 0 0 0 4px rgba(253, 161, 87, .22);
+  background: #ffa79c;
+  border-color: #ffa79c;
+  color: #2a0806;
+  box-shadow: 0 0 0 4px rgba(255, 138, 125, .22);
 }
 .hero__engines {
   display: block;
@@ -1112,6 +1112,27 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .cpill--wa svg { color: var(--wa); }
 .cpill--viber svg { color: #7360f2; }
 .cpill--max svg { color: #5b6ef5; }
+
+/* Награда Яндекс.Карт «Хорошее место»: плашка рядом с рейтингом.
+   Цвет — золотой, как у звёзд, а не фирменный: это чужая награда,
+   и она не должна выглядеть частью брендинга сервиса. */
+.award {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 10px;
+  border: 1px solid rgba(232, 163, 23, .45);
+  border-radius: var(--radius-pill);
+  background: rgba(232, 163, 23, .10);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.award svg { color: var(--star); flex: none; }
+.award i { display: block; font-style: normal; font-weight: 500; color: var(--text-dim); }
+a.award:hover { border-color: var(--star); background: rgba(232, 163, 23, .18); }
 .cpill--ya svg { color: var(--star); }
 
 /* ---------- дата и сноска в блоке отзывов ---------- */

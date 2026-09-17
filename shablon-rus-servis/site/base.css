@@ -172,16 +172,16 @@ a[data-no-phone] { cursor: default; }
 }
 .header.is-on-dark.is-scrolled::before {
   background: linear-gradient(180deg, #000 0%, rgba(0,0,0,.92) 60%, rgba(0,0,0,.35) 100%);
-  border-bottom: 1px solid #2a241f;
+  border-bottom: 1px solid #2a2220;
 }
 .header.is-on-dark .header__inner {
   --text:        #ffffff;
-  --text-muted:  #d6cbc3;
-  --text-dim:    #a89b92;
-  --line:        #322a24;
-  --line-strong: #443b33;
-  --accent:      #f97316;
-  --accent-soft: rgba(249, 115, 22, .16);
+  --text-muted:  #d4c7c5;
+  --text-dim:    #a89694;
+  --line:        #322826;
+  --line-strong: #443836;
+  --accent:      #ff5c4d;
+  --accent-soft: rgba(255, 92, 77, .16);
   --green-line:  rgba(47, 191, 106, .5);
   color: var(--text);
 }
@@ -205,15 +205,18 @@ a[data-no-phone] { cursor: default; }
   color: var(--on-accent);
   font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
 }
-/* Логотип картинкой. Исходник — круглый значок на белом, поэтому
-   рамка-кольцо: иначе на белой шапке он «висит» без границ. */
+/* Логотип картинкой. Знак «RusServis» — горизонтальный, чёрный на
+   белом, поэтому плашка не круглая, а вытянутая, и contain вместо
+   cover: cover обрезал бы надпись по краям. Рамка нужна на белой
+   шапке — иначе белая плашка «висит» без границ. */
 .logo__img {
-  width: 38px; height: 38px;
+  width: 58px; height: 38px;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: 9px;
   border: 1px solid var(--line);
   background: #fff;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 3px;
 }
 .logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; overflow: hidden; }
 /* nowrap + overflow: hidden — иначе при нехватке места ячейка сжимается
