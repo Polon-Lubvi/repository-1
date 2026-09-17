@@ -1314,9 +1314,8 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .calc__row span { color: var(--text-muted); }
 .calc__row b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
 
-/* Плашка выгоды: сама красная, как весь сайт, а сумма внутри —
-   зелёная. Зелёный тут единственный на странице и работает как
-   смысл «это ваши деньги», а не как второй фирменный цвет. */
+/* Плашка выгоды: сама красная, как весь сайт, сумма внутри чёрная —
+   так она читается как цифра, а не как ещё один акцент. */
 .calc__save {
   margin-top: 4px;
   padding: 16px 18px;
@@ -1326,7 +1325,7 @@ a.review:hover .review__foot { color: var(--text-muted); }
   display: flex; flex-direction: column; gap: 6px;
 }
 .calc__save span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
-.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 .calc__note { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.5; }
 .calc__cta { justify-self: center; }
