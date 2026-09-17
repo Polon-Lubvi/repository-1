@@ -84,28 +84,6 @@
     }).join('') + '</div>';
   }
 
-  /* Лента фото: листается влево-вправо (свайп на телефоне, стрелки на
-     десктопе). Кадры одного размера — object-fit: cover в CSS их подрежет.
-     variant задаёт пропорции плитки (см. .strip--* в blocks.css). */
-  function photoStrip(photos, variant) {
-    if (!photos || !photos.length) return '';
-    var slides = photos.map(function (ph) {
-      return '<figure class="strip__item">' +
-        (ph.src
-          ? '<img src="' + esc(ph.src) + '" alt="' + esc(ph.need || '') + '" loading="lazy">'
-          : '<div class="photo-stub"><span class="photo-stub__tag">Фото</span>' +
-              '<p class="photo-stub__text">' + esc(ph.need || '') + '</p></div>') +
-      '</figure>';
-    }).join('');
-    return '<div class="strip strip--' + esc(variant) + '" data-strip>' +
-      '<button class="strip__nav strip__nav--prev" type="button" aria-label="Предыдущее фото" hidden>' +
-        ic('chevronL', { size: 20 }) + '</button>' +
-      '<div class="strip__track">' + slides + '</div>' +
-      '<button class="strip__nav strip__nav--next" type="button" aria-label="Следующее фото" hidden>' +
-        ic('chevronR', { size: 20 }) + '</button>' +
-    '</div>';
-  }
-
   /* Счётчик установок: базовое + floor(прошло_суток × прирост) — ТЗ блок 1.
      Не используется, пока в content.js задан hero.counterValue:
      выдуманную цифру установок заменили реальным рейтингом с Карт. */
@@ -621,29 +599,6 @@
     '</div></section>';
   }
 
-  /* =====================  БЛОК 8 — Частые вопросы  ===================== */
-  function renderFaq() {
-    var f = S.faq;
-
-    var items = f.items.map(function (it, i) {
-      var photos = photoStrip(it.photos, 'faq');
-      return '<div class="acc__item" data-acc="faq-' + i + '">' +
-        '<button class="acc__head" type="button" aria-expanded="false">' +
-          '<span>' + esc(it.q) + '</span>' + ic('chevronDown', { size: 20 }) +
-        '</button>' +
-        '<div class="acc__panel"><div class="acc__inner">' +
-          '<p class="acc__text">' + esc(it.a) + '</p>' +
-          photos +
-        '</div></div>' +
-      '</div>';
-    }).join('');
-
-    return '<section class="faq" id="faq"><div class="wrap">' +
-      '<h2 class="faq__lead">' + esc(f.lead) + '</h2>' +
-      '<div class="acc faq__acc">' + items + '</div>' +
-    '</div></section>';
-  }
-
   /* Карта. Если задан mapEmbed — живой виджет Яндекс.Карт: его можно
      двигать, приближать, смотреть карточку организации и строить маршрут.
      Если виджета нет, остаётся старая статичная картинка со ссылкой. */
@@ -832,7 +787,7 @@
 
     document.getElementById('app').innerHTML =
       renderHeader() +
-      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderTeam() + renderReviews() + renderFaq() + renderLocation() + renderForm() + '</main>' +
+      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderTeam() + renderReviews() + renderLocation() + renderForm() + '</main>' +
       renderFooter() +
       renderWaFloat();
 
@@ -845,7 +800,6 @@
     wireClients();
     wireTuning();
     wireAccordions();
-    wireCarousels();
     wireTerms();
   }
 
@@ -1073,35 +1027,6 @@
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeOpen(null);
-    });
-  }
-
-  /* Ленты фото (блок 9 и блок 8): стрелки листают на одну плитку,
-     прячутся у краёв и когда листать нечего. Свайп работает и без JS. */
-  function wireCarousels() {
-    document.querySelectorAll('[data-strip]').forEach(function (strip) {
-      var track = strip.querySelector('.strip__track');
-      var prev = strip.querySelector('.strip__nav--prev');
-      var next = strip.querySelector('.strip__nav--next');
-      if (!track || !prev || !next) return;
-
-      function step() {
-        var item = track.querySelector('.strip__item');
-        return item ? item.getBoundingClientRect().width + 10 : track.clientWidth * 0.8;
-      }
-      function sync() {
-        var max = track.scrollWidth - track.clientWidth - 1;
-        var scrollable = max > 4;
-        prev.hidden = !scrollable || track.scrollLeft <= 2;
-        next.hidden = !scrollable || track.scrollLeft >= max;
-      }
-      prev.addEventListener('click', function () { track.scrollBy({ left: -step(), behavior: 'smooth' }); });
-      next.addEventListener('click', function () { track.scrollBy({ left:  step(), behavior: 'smooth' }); });
-      track.addEventListener('scroll', sync, { passive: true });
-      window.addEventListener('resize', sync);
-      /* картинки грузятся лениво — пересчитать, когда размеры станут известны */
-      track.querySelectorAll('img').forEach(function (img) { img.addEventListener('load', sync); });
-      sync();
     });
   }
 
