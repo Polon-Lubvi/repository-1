@@ -32,11 +32,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; padding: 0; }
-/* Заголовки — зелёные, основной текст — тёмно-зелёный.
-   Такой контраст и просил заказчик: белый фон, зелёные надписи. */
+/* Заголовки разделов — чёрные, зелёным горит только выделение
+   внутри них ({фигурные скобки} в content.js). Раньше было наоборот. */
 h1, h2, h3, h4 {
   font-weight: 700; line-height: 1.12; letter-spacing: -0.03em;
-  color: var(--accent);
+  color: var(--ink);
 }
 
 :focus-visible { outline: 2px solid var(--accent-hot); outline-offset: 3px; border-radius: 4px; }
@@ -327,11 +327,12 @@ a[data-no-phone] { cursor: default; }
 .wa-float:hover { background: var(--wa-hover); transform: scale(1.05); }
 @media (min-width: 900px) { .wa-float { display: none; } }
 
-/* Жирный текст — чёрный: и выделения внутри заголовков разделов,
-   и обычные <b> в абзацах. На тёмных участках (первый экран, шапка)
-   это правило перебивается локально, иначе текст пропал бы на фоне. */
-b, strong,
-.text-accent { color: var(--ink); }
+/* Жирный текст в абзацах — чёрный. На тёмных участках (первый экран,
+   шапка) это правило перебивается локально, иначе текст пропал бы. */
+b, strong { color: var(--ink); }
+
+/* Выделение внутри заголовка — зелёное на чёрном заголовке. */
+.text-accent { color: var(--accent); }
 
 /* Мелкие подписи-рубрикаторы набраны тем же <b>, но это не выделение,
    а служебная строка — оставляем её приглушённой. */

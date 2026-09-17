@@ -285,7 +285,9 @@
    БЛОК 3 — Что мы делаем. Три переключаемых подблока.
    Фон чёрный, без кирпича.
    ===================================================================== */
-.tuning { background: var(--bg); padding-block: clamp(56px, 8vw, 104px); }
+/* Блок поджат: между заголовком, плашками и текстом было слишком
+   много воздуха. Остальные разделы оставлены как были. */
+.tuning { background: var(--bg); padding-block: clamp(44px, 6vw, 80px); }
 
 .tuning__title {
   font-size: clamp(1.5rem, 2.95vw, 3.4rem);
@@ -295,7 +297,7 @@
 /* nowrap убран: заголовок этого сайта длиннее шаблонного и выезжал за экран */
 
 /* ---------- плашки-переключатели ---------- */
-.tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: clamp(28px, 4vw, 44px); }
+.tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: clamp(18px, 2.4vw, 28px); }
 .tab {
   height: 48px;
   padding-inline: 22px;
@@ -317,7 +319,7 @@
 }
 
 /* ---------- сцена подблока ---------- */
-.tuning__stage { position: relative; margin-top: clamp(24px, 3vw, 36px); }
+.tuning__stage { position: relative; margin-top: clamp(16px, 2vw, 24px); }
 
 .tuning__arrow {
   position: absolute;
@@ -340,7 +342,7 @@
 @media (min-width: 1320px) { .tuning__arrow { display: grid; } }
 
 /* ---------- содержимое подблока: слева текст, справа фото ---------- */
-.panel { display: grid; row-gap: 26px; column-gap: clamp(32px, 5vw, 88px); align-items: start; }
+.panel { display: grid; row-gap: 18px; column-gap: clamp(32px, 5vw, 88px); align-items: start; }
 /* без этого содержимое колонок вылезает за край подблока: у элемента сетки
    минимальная ширина по умолчанию равна ширине содержимого, а не нулю */
 .panel > * { min-width: 0; }
@@ -365,9 +367,9 @@
 .panel__heading {
   font-size: clamp(1.3rem, 2vw, 1.75rem);
   letter-spacing: -0.03em;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
-.panel__group + .panel__group { margin-top: 24px; }
+.panel__group + .panel__group { margin-top: 16px; }
 .panel__h {
   display: block;
   font-size: clamp(1.1rem, 1.6vw, 1.35rem);
@@ -380,7 +382,7 @@
 .panel__text b { font-weight: 600; color: var(--text); }
 
 /* ---------- две панели «тип впрыска» вместо сплошных абзацев ---------- */
-.panel__cards-wrap { display: grid; gap: 16px; }
+.panel__cards-wrap { display: grid; gap: 12px; }
 .panel__cards-lead {
   font-size: var(--fs-xs);
   font-weight: 700;
@@ -388,7 +390,7 @@
   text-transform: uppercase;
   color: var(--text-dim);
 }
-.panel__cards { display: grid; gap: 14px; align-items: start; }
+.panel__cards { display: grid; gap: 11px; align-items: start; }
 /* одна под другой — так задал заказчик */
 
 .panel__card {
@@ -484,7 +486,7 @@
   color: var(--text);           /* видимая строка перед кнопкой, а не серая сноска */
 }
 
-.panel__foot { display: grid; gap: 18px; justify-items: start; }
+.panel__foot { display: grid; gap: 13px; justify-items: start; }
 .panel__accent {
   margin-top: 0;
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);
@@ -495,7 +497,7 @@
 
 /* отзыв карточкой */
 .panel__review {
-  margin-top: 26px;
+  margin-top: 16px;
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -566,7 +568,7 @@
 }
 
 /* правая колонка */
-.panel__media { display: grid; gap: 16px; }
+.panel__media { display: grid; gap: 12px; }
 .panel__figure {
   position: relative;
   aspect-ratio: 16 / 10;
@@ -727,10 +729,10 @@
   font-size: var(--fs-lead);
   font-weight: 600;
   letter-spacing: -0.015em;
-  color: var(--accent);
+  color: var(--ink);
   transition: color .2s;
 }
-.acc__head:hover { color: var(--text); }
+.acc__head:hover { color: var(--accent); }
 .acc__head svg { flex-shrink: 0; color: var(--text-dim); transition: transform .25s, color .2s; }
 .acc__item.is-open .acc__head svg { transform: rotate(180deg); color: var(--accent-hot); }
 .acc__panel { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
@@ -981,7 +983,14 @@ a.review:hover .review__foot { color: var(--text-muted); }
 }
 
 .loc__grid { display: grid; gap: clamp(20px, 3vw, 32px); margin-top: clamp(28px, 4vw, 44px); }
-@media (min-width: 1000px) { .loc__grid { grid-template-columns: 1.2fr 1fr; align-items: start; } }
+/* Карта тянется во всю высоту блока: раньше правая колонка с адресом и
+   маршрутами была выше, и под картой оставалась пустая полоса. */
+@media (min-width: 1000px) {
+  .loc__grid { grid-template-columns: 1.2fr 1fr; align-items: stretch; }
+  .loc__mapcol { display: flex; }
+  .loc__mapcol .loc__map { flex: 1; display: flex; min-height: 360px; }
+  .loc__mapcol .loc__map-frame { flex: 1; height: auto; }
+}
 
 /* Карта — живой виджет Яндекс.Карт с карточкой организации: его можно
    двигать, приближать, смотреть отзывы и строить маршрут прямо здесь.

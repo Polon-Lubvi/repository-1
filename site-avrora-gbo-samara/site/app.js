@@ -690,7 +690,7 @@
       '<h2 class="loc__lead">' + esc(l.lead) + '</h2>' +
       '<div class="loc__grid">' +
 
-        '<div>' + mapHtml(l, y) + '</div>' +
+        '<div class="loc__mapcol">' + mapHtml(l, y) + '</div>' +
 
         '<div class="loc__info">' +
           '<p class="loc__addr">' + esc(l.address) + '</p>' +
