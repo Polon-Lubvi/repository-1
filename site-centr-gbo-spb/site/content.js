@@ -13,7 +13,7 @@ window.SITE = {
 
   brand: {
     short:   'ЦГ',
-    logo:    'img/logo.jpg',
+    logo:    'img/logo.png',
     name:    'Центр ГБО',
     tagline: 'Установка и обслуживание ГБО · Санкт-Петербург',
   },

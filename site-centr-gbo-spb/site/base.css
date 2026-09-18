@@ -178,12 +178,14 @@ a[data-no-phone] { cursor: default; }
 /* Настоящий логотип клиента — картинка со своим чёрным фоном, поэтому
    без квадратной плашки-заглушки: показываем по родной пропорции. */
 .logo__mark--img {
-  width: auto; height: 34px;
+  width: auto; height: 44px;
   background: none;
-  border-radius: 6px;
   object-fit: contain;
   flex-shrink: 0;
 }
+/* В логотипе-картинке название уже написано — дублировать его текстом
+   рядом не нужно, остаётся только строка с городом под ним. */
+.logo__mark--img + .logo__name .logo__title { display: none; }
 .logo__name { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 /* Шапка всегда лежит на собственной тёмной подложке (.header::before),
    даже когда фон страницы светлый — поэтому текст в ней светлый всегда,

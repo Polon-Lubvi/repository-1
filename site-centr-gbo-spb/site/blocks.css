@@ -1118,8 +1118,10 @@ a.review:hover .review__foot { color: var(--text-muted); }
 
 .footer__brand { display: flex; align-items: center; gap: 10px; }
 .footer__brand .logo__mark { width: 30px; height: 30px; }
-.footer__brand .logo__mark--img { width: auto; height: 30px; }
+.footer__brand .logo__mark--img { width: auto; height: 40px; }
 .footer__brand b { font-size: var(--fs-body); font-weight: 700; letter-spacing: -0.02em; }
+/* название уже есть в самом логотипе — рядом не дублируем */
+.footer__brand .logo__mark--img + b { display: none; }
 .footer__addr { margin-top: 14px; font-size: var(--fs-sm); line-height: 1.6; color: var(--text-muted); }
 .footer__disc { margin-top: 12px; font-size: var(--fs-xs); line-height: 1.55; color: var(--text-dim); max-width: 44ch; }
 
