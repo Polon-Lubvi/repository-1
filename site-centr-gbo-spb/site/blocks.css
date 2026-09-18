@@ -84,6 +84,10 @@
   }
 }
 
+/* Весь первый экран выровнен по центру: переключаемые строки,
+   хуки, кнопка со счётчиком и подпись над фото. */
+.hero__text { text-align: center; }
+
 /* плашка срока — переключается «роликом» */
 .hero__term {
   margin-top: 0;
@@ -96,8 +100,8 @@
 .hero__term a:hover { border-bottom-color: #3ddc84; }
 
 /* мини-хуки */
-.hero__hooks { display: grid; gap: 13px; margin-top: 26px; }
-.hero__hook { display: flex; gap: 11px; align-items: flex-start; }
+.hero__hooks { display: grid; gap: 13px; margin-top: 26px; justify-items: center; }
+.hero__hook { display: flex; gap: 11px; align-items: flex-start; text-align: left; max-width: 34ch; }
 .hero__hook svg { flex-shrink: 0; margin-top: 3px; color: #3ddc84; }
 .hero__hook b { font-weight: 600; letter-spacing: -0.01em; color: #f4f6fb; }
 .hero__hook span { color: rgba(244, 246, 251, .75); }
@@ -108,6 +112,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 14px 20px;
   margin-top: 32px;
 }
@@ -120,10 +125,12 @@
   font-variant-numeric: tabular-nums;
   color: #f4f6fb;
 }
-.hero__counter span { font-size: var(--fs-sm); color: rgba(244, 246, 251, .75); white-space: nowrap; }
+/* без nowrap — на узких экранах (320px) подпись счётчика выталкивала
+   весь первый экран за правый край */
+.hero__counter span { font-size: var(--fs-sm); color: rgba(244, 246, 251, .75); }
 
 /* ---------- правая колонка: надпись + фото одним блоком ---------- */
-.hero__media { display: grid; gap: 16px; }
+.hero__media { display: grid; gap: 16px; text-align: center; }
 
 .hero__caption-title {
   display: block;
@@ -248,8 +255,8 @@
   font-size: clamp(1.5rem, 2.95vw, 3.4rem);
   letter-spacing: -0.038em;
   text-wrap: balance;
+  /* без white-space:nowrap — длинный заголовок вылезал за правый край */
 }
-@media (min-width: 1024px) { .tuning__title { white-space: nowrap; } }
 
 /* ---------- плашки-переключатели ---------- */
 .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: clamp(28px, 4vw, 44px); }
@@ -559,7 +566,8 @@
   letter-spacing: -0.038em;
   text-wrap: balance;
 }
-@media (min-width: 1024px) { .compare__title { white-space: nowrap; } }
+/* «Проблема — его настроить» всегда со второй строки */
+.compare__title .text-accent { display: block; }
 
 .compare__grid { display: grid; gap: clamp(28px, 4vw, 56px); margin-top: clamp(28px, 4vw, 48px); }
 @media (min-width: 1180px) { .compare__grid { grid-template-columns: 1.35fr 1fr; align-items: start; } }
@@ -1089,7 +1097,9 @@ a.review:hover .review__foot { color: var(--text-muted); }
   white-space: nowrap;      /* «Записаться на установку» — одной строкой */
 }
 @media (max-width: 400px) {
-  .form__submit { padding-inline: 22px; font-size: .95rem; }
+  /* на узких экранах разрешаем перенос: в одну строку кнопка
+     распирала карточку шире экрана */
+  .form__submit { padding-inline: 22px; font-size: .95rem; white-space: normal; }
 }
 
 .form__note {
@@ -1159,13 +1169,17 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .calc__field-head b { font-size: var(--fs-body); font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .calc__range {
+  --fill: 0%;
   width: 100%;
   margin-top: 14px;
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--line-strong);
+  /* левая часть дорожки закрашена акцентом до бегунка: долю задаёт
+     --fill, её выставляет paintTrack() в app.js */
+  background: linear-gradient(90deg,
+    var(--accent) 0 var(--fill), var(--line-strong) var(--fill) 100%);
   outline: none;
 }
 .calc__range:focus-visible { outline: 2px solid var(--accent-hot); outline-offset: 5px; }
@@ -1179,7 +1193,8 @@ a.review:hover .review__foot { color: var(--text-muted); }
   transition: box-shadow .15s;
 }
 .calc__range::-webkit-slider-thumb:hover { box-shadow: 0 0 0 8px rgba(34, 197, 94, .24), 0 2px 6px rgba(0, 0, 0, .4); }
-.calc__range::-moz-range-track { height: 6px; border-radius: var(--radius-pill); background: var(--line-strong); }
+/* прозрачный — иначе перекроет градиент-заполнение с самого input */
+.calc__range::-moz-range-track { height: 6px; border-radius: var(--radius-pill); background: transparent; }
 .calc__range::-moz-range-thumb {
   width: 22px; height: 22px;
   border-radius: 50%;
@@ -1208,10 +1223,12 @@ a.review:hover .review__foot { color: var(--text-muted); }
   display: flex; flex-direction: column; gap: 6px;
 }
 .calc__save span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
-.calc__save b { font-size: clamp(1.15rem, 1.8vw, 1.4rem); font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+.calc__save b { font-size: clamp(1.35rem, 2.2vw, 1.75rem); font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+.calc__save small { font-size: var(--fs-sm); color: var(--text-muted); }
+.calc__save small i { font-style: normal; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 
-.calc__note { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.5; }
 .calc__cta { justify-self: center; }
+.calc__acc { margin-top: clamp(28px, 4vw, 44px); }
 
 @media (max-width: 480px) {
   .calc__row { flex-direction: column; align-items: flex-start; gap: 2px; }

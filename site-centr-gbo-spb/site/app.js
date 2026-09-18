@@ -428,12 +428,6 @@
         '</div>' +
         '<div class="compare__photos">' + photos + '</div>' +
       '</div>' +
-
-      /* раскрывающиеся пункты: что входит в ТО, как считаем цену, свои запчасти */
-      '<div class="acc">' + accordion(c.accordion) + '</div>' +
-
-      /* гарантия */
-      warrantyHtml() +
     '</div></section>';
   }
 
@@ -499,19 +493,24 @@
         '</div>' +
 
         '<div class="calc__result">' +
-          '<div class="calc__row"><span>' + esc(s.rows.fuel) + '</span><b id="calc-out-fuel"></b></div>' +
           '<div class="calc__row"><span>' + esc(s.rows.petrol) + '</span><b id="calc-out-petrol"></b></div>' +
           '<div class="calc__row"><span>' + esc(s.rows.gas) + '</span><b id="calc-out-gas"></b></div>' +
           '<div class="calc__save">' +
             '<span>' + esc(s.saveLabel) + '</span>' +
-            '<b id="calc-out-save"></b>' +
+            '<b id="calc-out-save-year"></b>' +
+            '<small><i id="calc-out-save-month"></i> ' + esc(s.saveSub) + '</small>' +
           '</div>' +
-          '<p class="calc__note">' + esc(s.note) + '</p>' +
           '<a class="btn btn--cta calc__cta" href="' + wa + '"' + deadAttr(wa) + '>' +
             esc(s.cta.label) + ic('arrow', { size: 16 }) + '</a>' +
         '</div>' +
 
       '</div>' +
+
+      /* что входит в набор ГБО — переехало сюда из блока сравнения */
+      '<div class="acc calc__acc">' + accordion(S.compare.accordion) + '</div>' +
+
+      /* гарантия */
+      warrantyHtml() +
     '</div></section>';
   }
 
@@ -939,7 +938,6 @@
      Три ползунка (пробег, расход, цена бензина), газ и перерасход — из
      config.js. Считаем при каждом движении ползунка, без перезагрузки. */
   function fmtRub(n) { return fmt(n) + ' ₽'; }
-  function fmtL(n) { return fmt(n) + ' л'; }
 
   function wireCalculator() {
     var section = document.getElementById('calc');
@@ -954,18 +952,28 @@
       mileage:     document.getElementById('calc-out-mileage'),
       consumption: document.getElementById('calc-out-consumption'),
       petrolPrice: document.getElementById('calc-out-petrolPrice'),
-      fuel:        document.getElementById('calc-out-fuel'),
       petrol:      document.getElementById('calc-out-petrol'),
       gas:         document.getElementById('calc-out-gas'),
-      save:        document.getElementById('calc-out-save'),
+      saveYear:    document.getElementById('calc-out-save-year'),
+      saveMonth:   document.getElementById('calc-out-save-month'),
     };
     var units = S.calc.sliders;
     var perMonth = S.calc.periodMonth, perYear = S.calc.periodYear;
+
+    /* Закрашенная часть дорожки слева от бегунка: чистый CSS не умеет,
+       поэтому долю прогресса отдаём в CSS-переменную ползунка. */
+    function paintTrack(el) {
+      var min = Number(el.min), max = Number(el.max);
+      var pct = ((Number(el.value) - min) / (max - min)) * 100;
+      el.style.setProperty('--fill', pct + '%');
+    }
 
     function recalc() {
       var mileage = Number(els.mileage.value);
       var consumption = Number(els.consumption.value);
       var petrolPrice = Number(els.petrolPrice.value);
+
+      Object.keys(els).forEach(function (key) { paintTrack(els[key]); });
 
       out.mileage.textContent = fmt(mileage) + ' ' + units.mileage.unit;
       out.consumption.textContent = consumption.toLocaleString('ru-RU') + ' ' + units.consumption.unit;
@@ -977,10 +985,10 @@
       var gasCostMonth = gasLMonth * cfg.gasPrice;
       var saveMonth = petrolCostMonth - gasCostMonth;
 
-      out.fuel.textContent = fmtL(gasLMonth) + '/' + perMonth + ' · ' + fmtL(gasLMonth * 12) + '/' + perYear;
       out.petrol.textContent = fmtRub(petrolCostMonth) + '/' + perMonth + ' · ' + fmtRub(petrolCostMonth * 12) + '/' + perYear;
       out.gas.textContent = fmtRub(gasCostMonth) + '/' + perMonth + ' · ' + fmtRub(gasCostMonth * 12) + '/' + perYear;
-      out.save.textContent = fmtRub(saveMonth) + '/' + perMonth + ' · ' + fmtRub(saveMonth * 12) + '/' + perYear;
+      out.saveYear.textContent = fmtRub(saveMonth * 12) + '/' + perYear;
+      out.saveMonth.textContent = fmtRub(saveMonth);
     }
 
     Object.keys(els).forEach(function (key) {
