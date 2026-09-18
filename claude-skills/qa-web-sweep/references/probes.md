@@ -6,6 +6,29 @@
 
 ---
 
+## Проба 0 — Годность замеров
+
+**Запускать первой.** Если панель браузера свёрнута или скрыта, ширина вьюпорта равна
+нулю, и пробы 1, 4 и 13 вернут бессмысленные числа, которые легко принять за находки.
+Проверено на живом сайте: при скрытой панели проба 13 отрапортовала `viewport: 0`
+и ширину документа 257px вместо реальной.
+
+```js
+(() => {
+  const w = document.documentElement.clientWidth || window.innerWidth || 0;
+  const h = document.documentElement.clientHeight || window.innerHeight || 0;
+  return w > 0 && h > 0
+    ? { годно: true, viewport: w + 'x' + h }
+    : { годно: false, viewport: w + 'x' + h,
+        причина: 'Панель браузера скрыта или свёрнута. Замеры вёрстки недостоверны — показать панель и повторить пробы 1, 4, 13.' };
+})()
+```
+
+Пробы, не зависящие от размеров, — 2, 3, 5, 6, 7, 8, 9, 10, 11, 12 — работают и при
+скрытой панели.
+
+---
+
 ## Проба 1 — Горизонтальный скролл и виновники
 
 Главная проверка мобильной вёрстки. Запускать после `resize_window {preset: "mobile"}`
@@ -303,6 +326,209 @@
 
 Для российского сайта отсутствие политики обработки персональных данных — юридический
 риск, а не косметика. Ставить P1, не P3.
+
+---
+
+## Проба 10 — Доступные имена и ARIA
+
+Кнопка-иконка без подписи для экранной читалки — просто «кнопка». Пользователь не знает,
+что она делает.
+
+```js
+(() => {
+  const accName = el => {
+    const al = el.getAttribute('aria-label');
+    if (al && al.trim()) return al.trim();
+    const lb = el.getAttribute('aria-labelledby');
+    if (lb) {
+      const t = lb.split(/\s+/).map(id => document.getElementById(id)?.innerText || '').join(' ').trim();
+      if (t) return t;
+    }
+    const txt = (el.innerText || '').trim();
+    if (txt) return txt;
+    const img = el.querySelector('img[alt]');
+    if (img && img.alt.trim()) return img.alt.trim();
+    const svgTitle = el.querySelector('svg title');
+    if (svgTitle && svgTitle.textContent.trim()) return svgTitle.textContent.trim();
+    const ttl = el.getAttribute('title');
+    if (ttl && ttl.trim()) return ttl.trim();
+    if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+      if (el.id) {
+        const l = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
+        if (l && l.innerText.trim()) return l.innerText.trim();
+      }
+      const wrap = el.closest('label');
+      if (wrap && wrap.innerText.trim()) return wrap.innerText.trim();
+      if (el.placeholder && el.placeholder.trim()) return 'ТОЛЬКО PLACEHOLDER: ' + el.placeholder.trim();
+    }
+    return null;
+  };
+  const VALID = new Set(['button','link','checkbox','radio','tab','tablist','tabpanel','dialog','navigation','banner','main','contentinfo','complementary','search','form','list','listitem','menu','menuitem','menubar','alert','alertdialog','status','img','presentation','none','region','article','heading','switch','tooltip','progressbar','separator','textbox','combobox','option','listbox','grid','row','cell','columnheader','rowheader','table','toolbar','group','radiogroup','tree','treeitem','feed','figure','note','document','application','timer','log','slider','spinbutton','scrollbar']);
+  const nameless = [], badRole = [];
+  const visible = el => {
+    const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
+  };
+  for (const el of document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [role=button], [role=link]')) {
+    if (!visible(el)) continue;
+    const n = accName(el);
+    if (!n || n.startsWith('ТОЛЬКО PLACEHOLDER')) {
+      nameless.push({ tag: el.tagName.toLowerCase(), type: el.type || null, name: n, html: el.outerHTML.slice(0, 90) });
+    }
+  }
+  for (const el of document.querySelectorAll('[role]')) {
+    const role = (el.getAttribute('role') || '').trim().toLowerCase();
+    if (role && !VALID.has(role)) badRole.push({ role, tag: el.tagName.toLowerCase() });
+  }
+  return { namelessCount: nameless.length, nameless: nameless.slice(0, 20), invalidRoleCount: badRole.length, invalidRoles: badRole.slice(0, 10) };
+})()
+```
+
+Placeholder вместо подписи считается дефектом: он исчезает при вводе, и пользователь
+теряет подсказку о том, что за поле он заполняет.
+
+---
+
+## Проба 11 — Видимость фокуса
+
+Элемент, не меняющийся при фокусе, делает навигацию с клавиатуры невозможной: человек
+не видит, где он находится.
+
+**Проба разбирает стили статически, а не фокусирует элементы.** Это принципиально.
+Ранняя версия вызывала `.focus()` программно и сравнивала стиль до и после — на живом
+сайте она дала 37 ложных срабатываний из 37. Причина: современные сайты пишут стиль
+фокуса на `:focus-visible`, который браузер применяет только при навигации с клавиатуры,
+а не при программном вызове. Динамическая проверка здесь недостоверна в принципе.
+
+```js
+(() => {
+  let focusVisible = 0, focusPlain = 0, cors = 0, readable = 0;
+  const resets = [];
+  for (const sh of document.styleSheets) {
+    let rs;
+    try { rs = sh.cssRules; readable++; } catch (e) { cors++; continue; }
+    const walk = list => {
+      for (const r of list) {
+        if (r.selectorText) {
+          if (/:focus-visible/.test(r.selectorText)) focusVisible++;
+          else if (/:focus/.test(r.selectorText)) focusPlain++;
+          // сброс контура вне контекста фокуса — подозрительно
+          if (/outline\s*:\s*(none|0)\b/.test(r.cssText) && !/:focus/.test(r.selectorText)) {
+            resets.push(r.selectorText.slice(0, 70));
+          }
+        }
+        if (r.cssRules) walk(r.cssRules);
+      }
+    };
+    walk(rs);
+  }
+  const total = focusVisible + focusPlain;
+  return {
+    focusVisibleRules: focusVisible,
+    focusRules: focusPlain,
+    totalFocusRules: total,
+    outlineResets: resets.length,
+    outlineResetSelectors: resets.slice(0, 8),
+    corsBlockedSheets: cors,
+    readableSheets: readable,
+    verdict: total === 0
+      ? (resets.length
+          ? 'ДЕФЕКТ: outline сброшен, а правил фокуса нет — навигация с клавиатуры вслепую'
+          : 'правил фокуса нет вообще — проверить Tab вручную')
+      : 'правила фокуса есть: ' + focusVisible + ' на :focus-visible, ' + focusPlain + ' на :focus'
+  };
+})()
+```
+
+Дефект — только сочетание «`outline: none` есть, правил фокуса нет». Один лишь
+`outline: none` при наличии `:focus-visible` — нормальная современная практика, багом
+не является. Если `corsBlockedSheets` больше нуля, часть стилей недоступна и вывод
+неполный: сказать об этом, а не делать вид, что проверено всё.
+
+---
+
+## Проба 12 — Уважение к prefers-reduced-motion
+
+```js
+(() => {
+  let mediaBlocks = 0, rulesInside = 0, readable = 0, blocked = 0;
+  for (const sh of document.styleSheets) {
+    let rs;
+    try { rs = sh.cssRules; readable++; } catch (e) { blocked++; continue; }
+    const walk = list => {
+      for (const r of list) {
+        if (r.type === CSSRule.MEDIA_RULE) {
+          const cond = r.conditionText || (r.media && r.media.mediaText) || '';
+          if (/prefers-reduced-motion/.test(cond)) { mediaBlocks++; rulesInside += r.cssRules.length; }
+          else walk(r.cssRules);
+        } else if (r.type === CSSRule.SUPPORTS_RULE) walk(r.cssRules);
+      }
+    };
+    walk(rs);
+  }
+  const animated = [...document.querySelectorAll('body *')].filter(el => {
+    const s = getComputedStyle(el);
+    return (s.animationName && s.animationName !== 'none') ||
+           (s.transitionDuration && s.transitionDuration.split(',').some(d => parseFloat(d) > 0));
+  }).length;
+  return {
+    honours: mediaBlocks > 0,
+    mediaBlocks, rulesInside,
+    readableSheets: readable, corsBlockedSheets: blocked,
+    animatedElements: animated,
+    verdict: mediaBlocks > 0 ? 'правило есть'
+      : (animated > 0 ? 'АНИМАЦИЯ ЕСТЬ, а правила prefers-reduced-motion НЕТ' : 'анимации нет, правило не требуется')
+  };
+})()
+```
+
+Если `corsBlockedSheets` больше нуля, часть стилей с другого домена прочитать нельзя —
+вывод неполный, сказать об этом прямо.
+
+---
+
+## Проба 13 — Увеличение текста вдвое
+
+Имитация системной настройки крупного шрифта. Ломается обычно то, что свёрстано
+фиксированными высотами.
+
+```js
+(() => {
+  const d = document.documentElement;
+  const base = parseFloat(getComputedStyle(d).fontSize);
+  const orig = d.style.fontSize;
+  const beforeScroll = d.scrollWidth, vw = d.clientWidth;
+  d.style.fontSize = (base * 2) + 'px';
+  void d.offsetHeight;
+  const afterScroll = d.scrollWidth;
+  const clipped = [...document.querySelectorAll('body *')].filter(el => {
+    if (el.children.length) return false;
+    if (!(el.innerText || '').trim()) return false;
+    const s = getComputedStyle(el);
+    if (s.overflow === 'visible' && s.overflowY === 'visible') return false;
+    return el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2;
+  }).slice(0, 15).map(el => ({
+    text: (el.innerText || '').trim().slice(0, 35),
+    sel: el.tagName.toLowerCase() + (el.className ? '.' + el.className.toString().trim().split(/\s+/)[0] : '')
+  }));
+  d.style.fontSize = orig;
+  void d.offsetHeight;
+  return {
+    baseFontPx: base,
+    scaledTo: base * 2,
+    beforeScrollWidth: beforeScroll,
+    afterScrollWidth: afterScroll,
+    viewport: vw,
+    newHorizontalScroll: afterScroll > vw && beforeScroll <= vw,
+    clippedCount: clipped.length,
+    clipped,
+    note: afterScroll === beforeScroll ? 'Ширина не изменилась — возможно, размеры заданы в px и на настройку шрифта не реагируют, это тоже дефект доступности' : null
+  };
+})()
+```
+
+Отдельная находка — когда ничего не поменялось: значит текст свёрстан в `px` и системную
+настройку крупного шрифта игнорирует.
 
 ---
 
