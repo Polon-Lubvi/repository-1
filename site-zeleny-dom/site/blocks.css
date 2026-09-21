@@ -291,22 +291,31 @@
 @media (min-width: 1320px) { .tuning__arrow { display: grid; } }
 
 /* ---------- содержимое подблока: слева текст, справа фото ---------- */
-.panel { display: grid; row-gap: 26px; column-gap: clamp(32px, 5vw, 88px); align-items: start; }
+.panel { display: grid; row-gap: 20px; column-gap: clamp(32px, 5vw, 88px); align-items: start; }
 /* без этого содержимое колонок вылезает за край подблока: у элемента сетки
    минимальная ширина по умолчанию равна ширине содержимого, а не нулю */
 .panel > * { min-width: 0; }
 @media (min-width: 1024px) {
-  .panel { grid-template-columns: 1fr 1fr; align-items: center; }
-  /* строка-вывод и сноска идут во всю ширину — чтобы влезали в одну строку */
+  /* Текст прижат к верху колонки. При align-items: center короткий текст
+     вставал по центру высокого фото, и сверху и снизу от него зияло по
+     сотне пустых пикселей — из-за этого подблоки казались растянутыми. */
+  .panel { grid-template-columns: 1fr 1fr; align-items: start; }
   .panel__foot { grid-column: 1 / -1; }
-  /* подблок с панелями: слева плашки с текстом, справа фото */
-  .panel--cards .panel__cards-wrap { grid-column: 1; grid-row: 1; }
-  .panel--cards .panel__media      { grid-column: 2; grid-row: 1; }
 
-  /* Подблоки с фото (не с панелями): вывод и кнопка остаются в левой
-     колонке, на уровне с фотографией. Раньше они уходили во всю ширину
-     под высокое фото — слева зиял пустой кусок, страница растягивалась. */
-  .panel--shots .panel__foot { grid-column: 1; }
+  /* Фото тянется на обе строки, а текст и кнопки идут стопкой в левой
+     колонке: колонки выходят примерно вровень, лишней высоты нет. */
+  .panel--cards .panel__cards-wrap { grid-column: 1; grid-row: 1; }
+  .panel--cards .panel__foot       { grid-column: 1; grid-row: 2; }
+  .panel--cards .panel__media      { grid-column: 2; grid-row: 1 / 3; }
+
+  .panel--shots .panel__body  { grid-column: 1; grid-row: 1; }
+  .panel--shots .panel__foot  { grid-column: 1; grid-row: 2; }
+  .panel--shots .panel__media { grid-column: 2; grid-row: 1 / 3; }
+
+  /* Одиночный вертикальный кадр при ширине 360px вытягивался на 540px и
+     один задавал высоту всего подблока. Здесь он уже, на телефоне —
+     прежний. */
+  .panel--shots .shots--1 { max-width: 300px; }
   /* фото стоит по центру своей колонки, не прижимаясь ни к тексту, ни к краю.
      Центрируем саму ленту, а не колонку: justify-self схлопывал колонку
      до ширины содержимого, и кадры сжимались почти в ноль. */
@@ -316,9 +325,9 @@
 .panel__heading {
   font-size: clamp(1.3rem, 2vw, 1.75rem);
   letter-spacing: -0.03em;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 }
-.panel__group + .panel__group { margin-top: 24px; }
+.panel__group + .panel__group { margin-top: 18px; }
 .panel__h {
   display: block;
   font-size: clamp(1.1rem, 1.6vw, 1.35rem);
@@ -331,7 +340,7 @@
 .panel__text b { font-weight: 600; color: var(--text); }
 
 /* ---------- две панели «тип впрыска» вместо сплошных абзацев ---------- */
-.panel__cards-wrap { display: grid; gap: 16px; }
+.panel__cards-wrap { display: grid; gap: 12px; }
 .panel__cards-lead {
   font-size: var(--fs-xs);
   font-weight: 700;
@@ -339,14 +348,14 @@
   text-transform: uppercase;
   color: var(--text-dim);
 }
-.panel__cards { display: grid; gap: 14px; align-items: start; }
+.panel__cards { display: grid; gap: 12px; align-items: start; }
 /* одна под другой — так задал заказчик */
 
 .panel__card {
   display: grid;
   gap: 8px;
   align-content: start;
-  padding: clamp(18px, 2.4vw, 24px);
+  padding: clamp(16px, 1.9vw, 20px);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-elevated);
@@ -435,7 +444,7 @@
   color: var(--text);           /* видимая строка перед кнопкой, а не серая сноска */
 }
 
-.panel__foot { display: grid; gap: 18px; justify-items: start; }
+.panel__foot { display: grid; gap: 14px; justify-items: start; }
 .panel__accent {
   margin-top: 0;
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);

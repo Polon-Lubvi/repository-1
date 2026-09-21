@@ -743,7 +743,7 @@
         '<h2 class="form__lead">' + esc(f.lead) + '</h2>' +
         '<a class="btn btn--cta form__submit" href="' + wa + '"' + deadAttr(wa) + '>' +
           esc(f.submit) + ic('arrow', { size: 17 }) + '</a>' +
-        '<p class="form__note">' + lede(f.note) + '</p>' +
+        (f.note ? '<p class="form__note">' + lede(f.note) + '</p>' : '') +
       '</div>' +
     '</div></section>';
   }
