@@ -421,7 +421,7 @@
         '<div class="compare__table">' +
           '<div class="compare__head"><span>' + esc(c.headThem) + '</span><span>' + esc(c.headUs) + '</span></div>' +
           rows +
-          '<p class="compare__closing">' + esc(c.closing) + '</p>' +
+          (c.closing ? '<p class="compare__closing">' + esc(c.closing) + '</p>' : '') +
         '</div>' +
         '<div class="compare__photos">' + photos + '</div>' +
       '</div>' +
@@ -494,10 +494,10 @@
     var r = k.results;
     var wa = waLink(k.cta.topic);
 
-    var note = esc(k.note)
+    var note = k.note ? esc(k.note)
       .replace('{gasPrice}', fmt(cfg.gasPrice))
       .replace('{surcharge}', fmt(cfg.gasSurcharge * 100))
-      .replace('{installCost}', fmt(cfg.installCost));
+      .replace('{installCost}', fmt(cfg.installCost)) : '';
 
     return '<section class="calc" id="calc"><div class="wrap">' +
       '<h2 class="calc__title">' + accent(k.title) + '</h2>' +
@@ -530,7 +530,7 @@
             esc(k.cta.label) + ic('arrow', { size: 17 }) + '</a>' +
         '</div>' +
       '</div>' +
-      '<p class="calc__note">' + note + '</p>' +
+      (note ? '<p class="calc__note">' + note + '</p>' : '') +
     '</div></section>';
   }
 
@@ -685,11 +685,20 @@
       '<div class="loc__grid">' +
 
         '<div>' +
-          '<a class="loc__map" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
-            'aria-label="Открыть в Яндекс.Картах">' +
-            '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
-              'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
-          '</a>' +
+          (y.embed
+            /* обложка + кнопка: карту грузим только когда её попросили */
+            ? '<div class="loc__map" data-map="' + esc(y.embed) + '">' +
+                '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
+                  'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
+                '<button class="loc__mapBtn" type="button">' +
+                  ic('pin', { size: 17 }) + 'Открыть карту' +
+                '</button>' +
+              '</div>'
+            : '<a class="loc__map" href="' + esc(y.org || '#') + '" target="_blank" rel="noopener" ' +
+                'aria-label="Открыть в Яндекс.Картах">' +
+                '<img class="loc__map-img" src="' + esc(l.mapImage) + '" ' +
+                  'alt="Карта: ' + esc(l.address) + '" loading="lazy" width="1200" height="825">' +
+              '</a>') +
         '</div>' +
 
         '<div class="loc__info">' +
@@ -816,6 +825,7 @@
     wireTuning();
     wireAccordions();
     wireCalc();
+    wireMap();
     wireCarousels();
     wireTerms();
   }
@@ -1067,7 +1077,31 @@
     recalc();
   }
 
-  /* ---------- блок 9: карта грузится по клику ---------- */
+  /* ---------- блок 9: карта грузится по клику ----------
+     До клика на странице только картинка — ни одного стороннего скрипта.
+     После клика на её место встаёт живая карта Яндекса. */
+  function wireMap() {
+    var box = document.querySelector('[data-map]');
+    if (!box) return;
+    var btn = box.querySelector('.loc__mapBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+      if (box.classList.contains('is-live')) return;
+      var frame = document.createElement('iframe');
+      frame.className = 'loc__mapFrame';
+      frame.src = box.dataset.map;
+      frame.loading = 'lazy';
+      frame.title = 'Карта проезда';
+      frame.setAttribute('allowfullscreen', '');
+      frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+      box.appendChild(frame);
+      box.classList.add('is-live');
+      btn.remove();
+    });
+  }
+
+  /* ---------- термины с подсказкой ---------- */
   /* Термины с подсказкой. Слушаем на документе, а не на самих словах:
      панель блока 3 перерисовывается при смене вкладки, и обычные
      обработчики бы отваливались. На компьютере подсказка и так открыта

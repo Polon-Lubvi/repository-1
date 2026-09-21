@@ -22,6 +22,9 @@ window.CFG = {
     org:     'https://yandex.ru/maps/org/zelyony_dom/126477541354/',
     reviews: 'https://yandex.ru/maps/org/zelyony_dom/126477541354/reviews/',
     route:   'https://yandex.ru/maps/?rtext=~59.848543%2C30.507874&rtt=auto',
+    /* Интерактивная карта. Грузится по клику на картинку: пока её не
+       открыли, страница не тянет скрипты Яндекса — телефон не тормозит. */
+    embed:   'https://yandex.ru/map-widget/v1/org/zelyony_dom/126477541354/',
   },
 
   /* --- Прочие ссылки для подвала --- */
