@@ -1115,3 +1115,209 @@ a.review:hover .review__foot { color: var(--text-muted); }
 .footer__bottom a:hover { color: var(--text-muted); }
 
 
+
+/* =====================================================================
+   БЛОК 5 — Калькулятор окупаемости
+   Три ползунка и панель с результатом. Цвета — те же переменные темы:
+   красный акцент на управлении, зелёный на выгоде.
+   ===================================================================== */
+.calc {
+  background: var(--bg);
+  padding-block: clamp(56px, 8vw, 104px);
+  border-top: 1px solid var(--line);
+}
+.calc__title {
+  font-size: clamp(1.5rem, 2.95vw, 3.4rem);
+  letter-spacing: -0.038em;
+  text-wrap: balance;
+}
+.calc__lead {
+  margin-top: 14px;
+  max-width: 62ch;
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.calc__grid {
+  margin-top: clamp(26px, 3.5vw, 44px);
+  display: grid;
+  gap: clamp(18px, 2.4vw, 30px);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .calc__grid { grid-template-columns: 1.05fr 0.95fr; }
+}
+
+/* --- левая колонка: ползунки --- */
+.calc__controls {
+  display: grid;
+  gap: clamp(20px, 2.6vw, 30px);
+  padding: clamp(18px, 2.4vw, 28px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.calc__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.calc__value {
+  margin-left: auto;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.calc__unit { font-size: var(--fs-xs); font-weight: 600; color: var(--text-dim); }
+
+.calc__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  margin-top: 12px;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+.calc__range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--line-strong) var(--fill, 0%));
+}
+.calc__range::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--line-strong) var(--fill, 0%));
+}
+.calc__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px; height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 5px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+  transition: border-color .15s, transform .12s;
+}
+.calc__range::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 5px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+  transition: border-color .15s, transform .12s;
+}
+.calc__range:hover::-webkit-slider-thumb { border-color: var(--accent-hot); transform: scale(1.08); }
+.calc__range:hover::-moz-range-thumb     { border-color: var(--accent-hot); transform: scale(1.08); }
+.calc__range:focus-visible { outline: none; }
+.calc__range:focus-visible::-webkit-slider-thumb { border-color: var(--accent-hot); box-shadow: 0 0 0 4px var(--accent-deep); }
+.calc__range:focus-visible::-moz-range-thumb     { border-color: var(--accent-hot); box-shadow: 0 0 0 4px var(--accent-deep); }
+
+.calc__scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- правая колонка: результат --- */
+.calc__out {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 2.4vw, 28px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.calc__pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.calc__cell {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.calc__cell.is-good { border-color: var(--green-line); background: var(--green-soft); }
+.calc__cellLabel { font-size: var(--fs-xs); color: var(--text-dim); }
+.calc__cellSum {
+  font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.calc__cell.is-good .calc__cellSum { color: var(--green-dim); }
+.calc__cellPer { font-size: var(--fs-xs); color: var(--text-dim); }
+
+.calc__saving {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  padding: 16px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+}
+.calc__savingLabel { font-size: var(--fs-sm); font-weight: 600; color: var(--green-dim); }
+.calc__savingSum {
+  font-size: clamp(1.5rem, 3.6vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+.calc__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.calc__fact {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.calc__fact span { font-size: var(--fs-xs); color: var(--text-dim); }
+.calc__fact b {
+  font-size: var(--fs-lead);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.calc__never {
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.calc__cta { justify-self: start; margin-top: 4px; }
+.calc__note {
+  margin-top: clamp(16px, 2vw, 24px);
+  max-width: 78ch;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+@media (max-width: 460px) {
+  .calc__pair, .calc__facts { grid-template-columns: 1fr; }
+  .calc__cta { justify-self: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calc__range::-webkit-slider-thumb { transition: none; }
+  .calc__range::-moz-range-thumb { transition: none; }
+}

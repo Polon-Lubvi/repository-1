@@ -166,9 +166,14 @@
     var sc = C.schedule;
     if (!sc) return null;
     var d = new Date(new Date().toLocaleString('en-US', { timeZone: sc.tz }));
-    if (sc.days.indexOf(d.getDay()) === -1) return false;
+    var day = d.getDay();
+    if (sc.days.indexOf(day) === -1) return false;
+    /* день с особым графиком (у нас — суббота) перебивает общие from/to */
+    var ov = (sc.overrides || {})[day] || {};
+    var from = ov.from != null ? ov.from : sc.from;
+    var to   = ov.to   != null ? ov.to   : sc.to;
     var mins = d.getHours() * 60 + d.getMinutes();
-    return mins >= sc.from && mins < sc.to;
+    return mins >= from && mins < to;
   }
 
   /* =====================  ШАПКА  ===================== */
@@ -464,7 +469,72 @@
     '</div>';
   }
 
-  /* =====================  БЛОК 5 — Мастера  ===================== */
+  /* =====================  БЛОК 5 — Калькулятор окупаемости  =====================
+     Три ползунка задаёт посетитель, цена газа и стоимость установки —
+     в config.js. Считаем на лету, без отправки куда-либо. */
+  function renderCalc() {
+    var k = S.calc;
+    if (!k) return '';
+    var cfg = (C.calc || {}), sl = cfg.sliders || {};
+
+    var rows = ['consumption', 'mileage', 'petrolPrice'].map(function (key) {
+      var t = k.sliders[key] || {}, n = sl[key] || {};
+      return '<div class="calc__row">' +
+        '<label class="calc__label" for="calc-' + key + '">' + esc(t.label) +
+          '<output class="calc__value" id="calc-' + key + '-out"></output>' +
+          '<span class="calc__unit">' + esc(t.unit) + '</span>' +
+        '</label>' +
+        '<input class="calc__range" type="range" id="calc-' + key + '" data-calc="' + key + '"' +
+          ' min="' + n.min + '" max="' + n.max + '" step="' + n.step + '" value="' + n.value + '"' +
+          ' aria-label="' + esc(t.label) + ', ' + esc(t.unit) + '">' +
+        '<div class="calc__scale"><span>' + fmt(n.min) + '</span><span>' + fmt(n.max) + '</span></div>' +
+      '</div>';
+    }).join('');
+
+    var r = k.results;
+    var wa = waLink(k.cta.topic);
+
+    var note = esc(k.note)
+      .replace('{gasPrice}', fmt(cfg.gasPrice))
+      .replace('{surcharge}', fmt(cfg.gasSurcharge * 100))
+      .replace('{installCost}', fmt(cfg.installCost));
+
+    return '<section class="calc" id="calc"><div class="wrap">' +
+      '<h2 class="calc__title">' + accent(k.title) + '</h2>' +
+      '<p class="calc__lead">' + esc(k.lead) + '</p>' +
+      '<div class="calc__grid">' +
+        '<div class="calc__controls">' + rows + '</div>' +
+        '<div class="calc__out">' +
+          '<div class="calc__pair">' +
+            '<div class="calc__cell">' +
+              '<span class="calc__cellLabel">' + esc(r.petrol) + '</span>' +
+              '<span class="calc__cellSum" id="calc-petrol"></span>' +
+              '<span class="calc__cellPer">' + esc(k.perMonth) + '</span>' +
+            '</div>' +
+            '<div class="calc__cell is-good">' +
+              '<span class="calc__cellLabel">' + esc(r.gas) + '</span>' +
+              '<span class="calc__cellSum" id="calc-gas"></span>' +
+              '<span class="calc__cellPer">' + esc(k.perMonth) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="calc__saving">' +
+            '<span class="calc__savingLabel">' + esc(r.saving) + '</span>' +
+            '<strong class="calc__savingSum" id="calc-saving"></strong>' +
+          '</div>' +
+          '<div class="calc__facts">' +
+            '<div class="calc__fact"><span>' + esc(r.year) + '</span><b id="calc-year"></b></div>' +
+            '<div class="calc__fact"><span>' + esc(r.payback) + '</span><b id="calc-payback"></b></div>' +
+          '</div>' +
+          '<p class="calc__never" id="calc-never" hidden>' + esc(k.paybackNever) + '</p>' +
+          '<a class="btn btn--cta calc__cta" href="' + wa + '"' + deadAttr(wa) + '>' +
+            esc(k.cta.label) + ic('arrow', { size: 17 }) + '</a>' +
+        '</div>' +
+      '</div>' +
+      '<p class="calc__note">' + note + '</p>' +
+    '</div></section>';
+  }
+
+  /* =====================  БЛОК 6 — Мастера  ===================== */
   function renderTeam() {
     var t = S.team;
 
@@ -515,6 +585,14 @@
     var url = (C.yandex && C.yandex.reviews) || '';
     var org = (C.yandex && C.yandex.org) || url;
     var avitoUrl = (C.links && (C.links.avitoReviews || C.links.avito)) || '';
+    var gisUrl   = (C.links && C.links.gisReviews) || '';
+
+    /* у отзыва может быть своя площадка — ссылка ведёт туда, где он лежит */
+    function srcUrl(name) {
+      if (name === 'Авито') return avitoUrl;
+      if (name === '2ГИС')  return gisUrl;
+      return url;
+    }
     var stars = [0,1,2,3,4].map(function () { return ic('star', { size: 14 }); }).join('');
 
     function ratingCard(data, link) {
@@ -530,14 +608,13 @@
     }
 
     var ratings = '<div class="reviews__ratings">' +
-      ratingCard(r.rating, org) +
+      ratingCard(r.rating, srcUrl(r.rating.source) || org) +
       (r.ratingAvito && avitoUrl ? ratingCard(r.ratingAvito, avitoUrl) : '') +
     '</div>';
 
     var items = r.items.map(function (x) {
-      var isAv = x.src === 'Авито';
-      var href = isAv ? avitoUrl : url;
       var srcLabel = x.src || r.rating.source;
+      var href = srcUrl(srcLabel);
       return '<a class="review" href="' + esc(href) + '"' + (href ? ' target="_blank" rel="noopener"' : '') +
         ' title="Открыть отзыв на ' + esc(srcLabel) + '">' +
         '<span class="review__top">' +
@@ -628,6 +705,9 @@
           '</div>' +
           (y.org ? '<a class="btn btn--map" href="' + esc(y.org) + '" target="_blank" rel="noopener">' +
             'Открыть в Яндекс.Картах' + ic('arrow', { size: 16 }) + '</a>' : '') +
+          /* маршрут до ворот: координаты сервиса подставлены в config.js */
+          (y.route ? '<a class="btn btn--map" href="' + esc(y.route) + '" target="_blank" rel="noopener">' +
+            'Построить маршрут' + ic('arrow', { size: 16 }) + '</a>' : '') +
         '</div>' +
 
       '</div>' +
@@ -722,7 +802,7 @@
 
     document.getElementById('app').innerHTML =
       renderHeader() +
-      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderTeam() + renderReviews() + renderFaq() + renderLocation() + renderForm() + '</main>' +
+      '<main>' + renderHero() + renderClients() + renderTuning() + renderCompare() + renderCalc() + renderTeam() + renderReviews() + renderFaq() + renderLocation() + renderForm() + '</main>' +
       renderFooter() +
       renderWaFloat();
 
@@ -735,6 +815,7 @@
     wireClients();
     wireTuning();
     wireAccordions();
+    wireCalc();
     wireCarousels();
     wireTerms();
   }
@@ -903,6 +984,87 @@
         });
       });
     });
+  }
+
+  /* ---------- блок 5: калькулятор окупаемости ----------
+     Считаем в браузере на каждое движение ползунка, ничего никуда не
+     отправляем. Формула: сколько литров уходит сейчас на бензине,
+     столько же километров на газу (расход выше на gasSurcharge),
+     разница в рублях — это экономия, установка делится на неё. */
+  function wireCalc() {
+    var section = document.getElementById('calc');
+    if (!section) return;
+    var cfg = C.calc || {};
+    var inputs = {};
+    section.querySelectorAll('[data-calc]').forEach(function (el) { inputs[el.dataset.calc] = el; });
+    if (!inputs.consumption || !inputs.mileage || !inputs.petrolPrice) return;
+
+    var out = {
+      petrol:  document.getElementById('calc-petrol'),
+      gas:     document.getElementById('calc-gas'),
+      saving:  document.getElementById('calc-saving'),
+      year:    document.getElementById('calc-year'),
+      payback: document.getElementById('calc-payback'),
+      never:   document.getElementById('calc-never'),
+    };
+
+    var rub = function (n) { return fmt(n) + ' ₽'; };
+
+    /* месяцев -> «1 год 3 месяца» */
+    function months(n) {
+      n = Math.ceil(n);
+      var y = Math.floor(n / 12), m = n % 12;
+      var parts = [];
+      if (y) parts.push(y + ' ' + plural(y, ['год', 'года', 'лет']));
+      if (m) parts.push(m + ' ' + plural(m, ['месяц', 'месяца', 'месяцев']));
+      return parts.join(' ') || 'меньше месяца';
+    }
+    function plural(n, forms) {
+      var a = Math.abs(n) % 100, b = a % 10;
+      if (a > 10 && a < 20) return forms[2];
+      if (b > 1 && b < 5) return forms[1];
+      if (b === 1) return forms[0];
+      return forms[2];
+    }
+
+    function recalc() {
+      var consumption = parseFloat(inputs.consumption.value);
+      var mileage     = parseFloat(inputs.mileage.value);
+      var petrolPrice = parseFloat(inputs.petrolPrice.value);
+
+      /* подписи над ползунками */
+      section.querySelector('#calc-consumption-out').textContent = consumption.toLocaleString('ru-RU');
+      section.querySelector('#calc-mileage-out').textContent     = fmt(mileage);
+      section.querySelector('#calc-petrolPrice-out').textContent = fmt(petrolPrice);
+
+      /* закрашенная часть дорожки — для тех браузеров, где нужен градиент */
+      Object.keys(inputs).forEach(function (k) {
+        var el = inputs[k];
+        var pct = (el.value - el.min) / (el.max - el.min) * 100;
+        el.style.setProperty('--fill', pct + '%');
+      });
+
+      var litres   = consumption * mileage / 100;
+      var petrol   = litres * petrolPrice;
+      var gasCubes = litres * (1 + cfg.gasSurcharge);
+      var gas      = gasCubes * cfg.gasPrice;
+      var saving   = petrol - gas;
+
+      out.petrol.textContent = rub(petrol);
+      out.gas.textContent    = rub(gas);
+      out.saving.textContent = saving > 0 ? rub(saving) : rub(0);
+      out.year.textContent   = saving > 0 ? rub(saving * 12) : rub(0);
+
+      /* газ дороже бензина — при цене бензина ниже газовой такое бывает */
+      var never = saving <= 0 || cfg.installCost / saving > 120;
+      out.never.hidden = !never;
+      out.payback.textContent = never ? '—' : months(cfg.installCost / saving);
+    }
+
+    Object.keys(inputs).forEach(function (k) {
+      inputs[k].addEventListener('input', recalc);
+    });
+    recalc();
   }
 
   /* ---------- блок 9: карта грузится по клику ---------- */
