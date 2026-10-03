@@ -8,6 +8,7 @@
   python bot.py --get-chat-id   показать chat_id тех, кто написал боту
   python bot.py --mark-seen     пометить всё текущее просмотренным, ничего не слать
 """
+import hashlib
 import html
 import json
 import os
@@ -24,12 +25,13 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 STATE_FILE = BASE_DIR / "seen.json"
 MAX_SEEN = 5000
+INIT = "__init__:"  # метка в seen.json: источник уже встречался
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
 
 # --- Фильтр ---------------------------------------------------------------
 # Заказ подходит, если хоть одно из этих слов есть в ЗАГОЛОВКЕ...
 KEYWORDS = [
-    r"\bqa\b", r"\bq\.a\.", r"\bsdet\b", r"\baqa\b",
+    r"\bqa\b", r"\bq\.a\.", r"\bsdet\b", r"\baqa\b", r"\bqc\b", r"quality (assurance|control)",
     r"тестир", r"тестиров", r"тестировщик", r"протестир", r"потестит", r"протестит",
     r"автотест", r"тест[- ]?кейс", r"чек[- ]?лист\w* для тест", r"баг[- ]?репорт", r"регресс\w* тест",
     r"нагрузочн\w* тест", r"юзабилити[- ]тест", r"поиск баг", r"найти баг",
@@ -56,6 +58,9 @@ EXCLUDE = [
 KW_RE = re.compile("|".join(KEYWORDS), re.IGNORECASE)
 EX_RE = re.compile("|".join(EXCLUDE), re.IGNORECASE)
 STRONG_RE = re.compile("|".join(STRONG), re.IGNORECASE)
+# Пост в профильном канале считаем заказом/вакансией, только если похоже на объявление, а не на статью.
+OFFER_RE = re.compile(r"ваканси|ищем|ищу|требует|нуж[еа]н|зарплат|з/п|оплат|бюджет|заказ|удал[её]нн?|офис|гибрид|"
+                      r"engineer|hiring|salary|remote|\$|₽|€|usd", re.IGNORECASE)
 
 
 @dataclass
@@ -66,15 +71,27 @@ class Job:
     url: str
     description: str = ""
     budget: str = ""
+    loose: bool = False  # профильный QA-источник: ключевое слово может быть где угодно в тексте
+    title_only: bool = False  # общий канал вакансий: тестировщиков упоминают и в чужих вакансиях
 
     @property
     def key(self):
         return f"{self.source}:{self.id}"
 
+    @property
+    def fingerprint(self):
+        """Одна и та же вакансия, опубликованная в нескольких каналах, даёт один отпечаток."""
+        text = re.sub(r"\W+", "", f"{self.title} {self.description[:200]}".lower())
+        return "fp:" + hashlib.sha1(text.encode()).hexdigest()[:12]
+
 
 def is_qa(job: Job) -> bool:
     title = EX_RE.sub(" ", job.title)
     desc = EX_RE.sub(" ", job.description)
+    if job.title_only:
+        return bool(KW_RE.search(title))
+    if job.loose:
+        return bool((KW_RE.search(title) or KW_RE.search(desc)) and OFFER_RE.search(f"{title} {desc}"))
     return bool(KW_RE.search(title) or STRONG_RE.search(desc))
 
 
@@ -176,7 +193,88 @@ def src_freelancer_com():
         time.sleep(1)
 
 
-SOURCES = [src_fl, src_freelancehunt, src_kwork, src_freelance_ru, src_weblancer, src_freelancer_com]
+def src_peopleperhour():
+    seen = set()
+    for path in ("technology-programming/software-testing", "technology-programming"):
+        page = fetch("https://www.peopleperhour.com/freelance-jobs/" + path)
+        # цена в карточке стоит перед заголовком, поэтому запоминаем последнюю встреченную
+        price, pos = "", 0
+        for m in re.finditer(r'card__price[^>]*>.*?<span>([^<]+)</span>|<h6 class="item__title[^"]*">'
+                             r'<a[^>]*href="([^"]+-(\d+))">(.*?)</a></h6>\s*<p class="item__desc[^"]*">(.*?)</p>', page, re.S):
+            if m.group(1):
+                price = m.group(1)
+                continue
+            if m.group(3) not in seen:
+                seen.add(m.group(3))
+                yield Job("PeoplePerHour", m.group(3), strip_tags(m.group(4)), m.group(2), strip_tags(m.group(5)), price)
+            price = ""
+        time.sleep(1)
+
+
+def src_guru():
+    seen = set()
+    for path in ("c/programming-development/", ""):
+        page = fetch("https://www.guru.com/d/jobs/" + path)
+        for card in re.split(r'<div class="record jobRecord"', page)[1:]:
+            m = re.search(r'<h2 class="jobRecord__title[^"]*">\s*<a[^>]*href="/jobs/([^"/]+)/(\d+)[^"]*">(.*?)</a>', card, re.S)
+            if not m or m.group(2) in seen:
+                continue
+            seen.add(m.group(2))
+            d = re.search(r'<p class="jobRecord__desc"[^>]*>(.*?)</p>', card, re.S)
+            b = re.search(r'<div class="jobRecord__budget">(.*?)</div>', card, re.S)
+            yield Job("Guru", m.group(2), strip_tags(m.group(3)), f"https://www.guru.com/jobs/{m.group(1)}/{m.group(2)}",
+                      strip_tags(d.group(1)) if d else "", strip_tags(b.group(1)) if b else "")
+        time.sleep(1)
+
+
+# Telegram-каналы читаются через публичное веб-превью t.me/s/<канал>, без бота и авторизации.
+TG_QA_CHANNELS = [      # профильные: каждый пост про QA
+    "forallqa",         # Job for QA, ~23K
+    "ingamejob_qa",     # QA and Testing в геймдеве (InGameJob), ~12K
+    "qa_jobs_rabota",   # Вакансии QA Engineer / тестировщикам, ~6K
+    "qa_rabota",        # QA_Jobs, ~1K
+]
+TG_GENERAL_CHANNELS = [  # общие IT / фриланс: берём только QA-посты
+    "jobforjunior",     # Job for Junior, ~85K
+    "Remoteit",         # Remote IT, ~51K
+    "geekjobs",         # Job in IT & Digital, ~51K
+    "habr_career",      # Хабр Карьера, ~33K
+    "vakansii_it",      # Вакансии айти, ~28K
+    "FreeWorkFeed",     # фриланс и удалёнка, ~24K
+    "Getitrussia",      # Get IT, ~21K
+    "remote_w0rk",      # Удалёнка, ~15K
+]
+
+
+def tg_channel(channel, loose):
+    page = fetch(f"https://t.me/s/{channel}")
+    for block in re.split(r'<div class="tgme_widget_message_wrap', page)[1:]:
+        post = re.search(r'data-post="([^"]+)/(\d+)"', block)
+        text = re.search(r'<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', block, re.S)
+        if not post or not text:
+            continue
+        body = strip_tags(text.group(1))
+        lines = [l.strip() for l in body.splitlines() if l.strip()]
+        if not lines:
+            continue
+        # у дайджестов первая строка — хэштег, заголовок берём со следующей
+        head = next((l for l in lines if not l.startswith("#")), lines[0])
+        title = head[:120]
+        yield Job(f"Telegram @{channel}", post.group(2), title, f"https://t.me/{post.group(1)}/{post.group(2)}",
+                  " ".join(lines[1:]), loose=loose, title_only=not loose)
+
+
+def src_telegram():
+    for channel in TG_QA_CHANNELS + TG_GENERAL_CHANNELS:
+        try:
+            yield from tg_channel(channel, loose=channel in TG_QA_CHANNELS)
+        except Exception as e:
+            print(f"  ! @{channel}: {e!r}", file=sys.stderr)
+        time.sleep(0.5)
+
+
+SOURCES = [src_fl, src_freelancehunt, src_kwork, src_freelance_ru, src_weblancer, src_freelancer_com,
+           src_peopleperhour, src_guru, src_telegram]
 
 
 # --- Состояние и Telegram ---------------------------------------------------
@@ -197,7 +295,9 @@ def load_seen():
 
 
 def save_seen(seen):
-    STATE_FILE.write_text(json.dumps(seen[-MAX_SEEN:], ensure_ascii=False, indent=0), encoding="utf-8")
+    marks = [k for k in seen if k.startswith(INIT)]  # метки источников не вытесняются старыми заказами
+    jobs = [k for k in seen if not k.startswith(INIT)]
+    STATE_FILE.write_text(json.dumps(marks + jobs[-MAX_SEEN:], ensure_ascii=False, indent=0), encoding="utf-8")
 
 
 def tg(method, **params):
@@ -213,7 +313,8 @@ def format_job(job: Job):
     lines = [f"🧪 <b>{html.escape(job.title)}</b>", f"📍 {job.source}" + (f" · 💰 {html.escape(job.budget)}" if job.budget else "")]
     if desc:
         lines.append(html.escape(desc))
-    lines.append(f'<a href="{html.escape(job.url)}">Открыть заказ →</a>')
+    link = "Открыть пост →" if job.source.startswith("Telegram") else "Открыть заказ →"
+    lines.append(f'<a href="{html.escape(job.url)}">{link}</a>')
     return "\n".join(lines)
 
 
@@ -245,16 +346,26 @@ def run_once(dry_run=False, mark_only=False):
         qa = [j for j in jobs if is_qa(j)]
         new = [j for j in qa if j.key not in seen_set]
         print(f"[{src.__name__}] всего {len(jobs)}, QA {len(qa)}, новых {len(new)}")
+        # Новый источник (например, добавленный канал): при первой встрече не шлём его старые
+        # посты пачкой, а молча запоминаем — дальше приходят только свежие.
+        fresh = {j.source for j in jobs} - {k[len(INIT):] for k in seen_set if k.startswith(INIT)}
+        for name in sorted(fresh):
+            if not dry_run:
+                seen.append(INIT + name)
+                seen_set.add(INIT + name)
         for j in new:
             if dry_run:
                 print(f"   + {j.source} | {j.title} | {j.budget} | {j.url}")
                 continue
-            if mark_only or send(j):
-                seen.append(j.key)
-                seen_set.add(j.key)
-                found += 1
-                if not mark_only:
+            # первая встреча с источником, кросс-пост уже присланной вакансии или --mark-seen: не шлём
+            if j.source in fresh or j.fingerprint in seen_set or mark_only or send(j):
+                if j.source not in fresh and j.fingerprint not in seen_set and not mark_only:
+                    found += 1
                     time.sleep(1.1)
+                for k in (j.key, j.fingerprint):
+                    if k not in seen_set:
+                        seen.append(k)
+                        seen_set.add(k)
     if not dry_run:
         save_seen(seen)
     return found

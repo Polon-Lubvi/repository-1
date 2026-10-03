@@ -11,8 +11,33 @@
 | Freelance.ru | лента заданий |
 | Weblancer | лента заказов |
 | Freelancer.com | публичный API, поиск по qa / manual / software testing |
+| PeoplePerHour | категории Software Testing и Technology & Programming |
+| Guru | лента Programming & Development и общая лента |
+| Telegram | 12 каналов, список ниже |
 
 Хабр Фриланс закрыт, RSS Upwork отключён, поэтому их в списке нет.
+
+### Telegram-каналы
+
+Каналы читаются через публичное веб-превью `t.me/s/<канал>`. Бот не нужно добавлять в каналы,
+подписываться на них тоже не нужно.
+
+Профильные QA-каналы: присылаются все вакансии, рекламные посты и статьи отсеиваются.
+- [@forallqa](https://t.me/forallqa) — Job for QA
+- [@ingamejob_qa](https://t.me/ingamejob_qa) — QA и тестирование в геймдеве
+- [@qa_jobs_rabota](https://t.me/qa_jobs_rabota) — вакансии QA Engineer / тестировщикам
+- [@qa_rabota](https://t.me/qa_rabota) — QA_Jobs
+
+Общие IT- и фриланс-каналы: присылаются только посты, у которых QA-слово стоит в заголовке.
+- [@jobforjunior](https://t.me/jobforjunior), [@Remoteit](https://t.me/Remoteit), [@geekjobs](https://t.me/geekjobs),
+  [@habr_career](https://t.me/habr_career), [@vakansii_it](https://t.me/vakansii_it),
+  [@FreeWorkFeed](https://t.me/FreeWorkFeed), [@Getitrussia](https://t.me/Getitrussia), [@remote_w0rk](https://t.me/remote_w0rk)
+
+Каналы добавляются и убираются в списках `TG_QA_CHANNELS` и `TG_GENERAL_CHANNELS` в `bot.py`.
+Канал подойдёт, только если у него открыто веб-превью: страница `https://t.me/s/<канал>` показывает посты.
+
+Новый источник при первом запуске запоминается молча, чтобы не прислать пачку старых постов.
+Одна и та же вакансия, опубликованная в нескольких каналах, приходит один раз.
 
 Как выглядит сообщение:
 
