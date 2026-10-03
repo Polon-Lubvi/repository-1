@@ -1,4 +1,6 @@
 [
+"__init__:Guru",
+"__init__:PeoplePerHour",
 "__init__:FL.ru",
 "__init__:Freelancehunt",
 "__init__:Kwork",
@@ -12,5 +14,13 @@
 "Freelancer.com:40747151",
 "Freelancer.com:40746938",
 "Freelancer.com:40746687",
-"Freelancer.com:40747640"
+"Freelancer.com:40747640",
+"PeoplePerHour:4524595",
+"fp:395e43454495",
+"PeoplePerHour:4523126",
+"fp:445f7caa58eb",
+"PeoplePerHour:4519287",
+"fp:ea21a5d54500",
+"PeoplePerHour:4517184",
+"fp:15e3f58982a0"
 ]
