@@ -266,9 +266,14 @@ def main():
     load_env()
     args = set(sys.argv[1:])
     if "--get-chat-id" in args:
-        for u in tg("getUpdates").get("result", []):
+        updates = tg("getUpdates").get("result", [])
+        for u in updates:
             chat = (u.get("message") or u.get("my_chat_member") or {}).get("chat", {})
             print(chat.get("id"), chat.get("username") or chat.get("title"))
+        if not updates:
+            me = tg("getMe")["result"]["username"]
+            print(f"Сообщений пока нет. Откройте https://t.me/{me}, нажмите Start "
+                  "или напишите что угодно, затем запустите команду ещё раз.")
         return
     if "--loop" in args:
         interval = int(os.environ.get("CHECK_INTERVAL", "300"))
