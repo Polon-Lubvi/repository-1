@@ -10,7 +10,7 @@ REPO="${BACKUP_REPO:-/c/Users/user/Desktop/Cloudeu/ClaudeCode/_github-backup}"
 SUB="graficheskiy-dizayner-bot"
 DST="$REPO/$SUB"
 
-msg() { printf '{"systemMessage": "%s"}\n' "$1"; }
+msg() { printf '{"systemMessage": "%s"}\n' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')"; }
 
 [ -d "$REPO/.git" ] || { msg "GitHub-синхронизация: не найден репозиторий $REPO"; exit 0; }
 
@@ -61,7 +61,7 @@ git add -A -- "$SUB" 2>/dev/null
 if git diff --cached --quiet -- "$SUB"; then
     exit 0
 fi
-CHANGED="$(git diff --cached --name-only -- "$SUB" | sed "s#^$SUB/##" | head -8 | paste -sd, - | sed 's/,/, /g')"
+CHANGED="$(git -c core.quotepath=false diff --cached --name-only -- "$SUB" | sed "s#^$SUB/##" | head -8 | paste -sd, - | sed 's/,/, /g')"
 git commit -q -m "$SUB: автосинхронизация $(date '+%Y-%m-%d %H:%M')" -m "Изменено: $CHANGED"
 if git pull -q --rebase && git push -q 2>/dev/null; then
     msg "Запушено на GitHub ($(git log -1 --format=%h)): $CHANGED"
