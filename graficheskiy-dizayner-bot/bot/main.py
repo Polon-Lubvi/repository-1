@@ -40,6 +40,7 @@ HELP = """<b>Бот вакансий для графического дизай�
 /enablesite номер — вернуть сайт
 /settime ЧЧ:ММ — поменять время ежедневной выгрузки
 /stats — статистика и чему я уже научилась
+/stop — не присылать ежедневную выгрузку в этот чат
 /id — показать ID чата (для настройки)"""
 
 
@@ -81,11 +82,12 @@ def _caption(vacs: list[dict], stats: dict) -> str:
     return cap[:1024]
 
 
-async def build_and_send(context: ContextTypes.DEFAULT_TYPE, chat_ids: list[int]) -> None:
+async def build_and_send(context: ContextTypes.DEFAULT_TYPE, chat_ids: list[int]) -> bool:
+    """True — выгрузка собрана и разослана (или новых вакансий нет); False — сбой или уже идёт сбор."""
     if RUN_LOCK.locked():
         for cid in chat_ids:
             await context.bot.send_message(cid, "Выгрузка уже собирается, пришлю, как будет готово.")
-        return
+        return False
     async with RUN_LOCK:
         try:
             path, vacs, stats = await asyncio.to_thread(pipeline.make_report)
@@ -93,14 +95,18 @@ async def build_and_send(context: ContextTypes.DEFAULT_TYPE, chat_ids: list[int]
             log.exception("Сбор вакансий упал")
             for cid in chat_ids:
                 await context.bot.send_message(cid, "Не получилось собрать вакансии — подробности в логе бота.")
-            return
+            return False
         for cid in chat_ids:
-            if not path:
-                await context.bot.send_message(cid, "Новых подходящих вакансий за сегодня не нашлось. Завтра проверю снова.")
-                continue
-            with open(path, "rb") as f:
-                await context.bot.send_document(cid, document=f, filename=path.name,
-                                                caption=_caption(vacs, stats), parse_mode=ParseMode.HTML)
+            try:
+                if not path:
+                    await context.bot.send_message(cid, "Новых подходящих вакансий за сегодня не нашлось. Завтра проверю снова.")
+                    continue
+                with open(path, "rb") as f:
+                    await context.bot.send_document(cid, document=f, filename=path.name,
+                                                    caption=_caption(vacs, stats), parse_mode=ParseMode.HTML)
+            except Exception:  # один недоступный чат (бот заблокирован и т.п.) не мешает остальным
+                log.exception("Не удалось отправить выгрузку в чат %s", cid)
+        return True
 
 
 async def daily_job(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -108,13 +114,25 @@ async def daily_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     if not chats:
         log.warning("Некому отправлять: задайте TELEGRAM_CHAT_ID или нажмите /start в боте")
         return
-    await build_and_send(context, chats)
+    if await build_and_send(context, chats):
+        storage.set_setting("last_daily", datetime.now(TZ).date().isoformat())
+
+
+def needs_catch_up(now: datetime | None = None) -> bool:
+    """Бот запустили после времени выгрузки, а сегодняшняя ещё не уходила (компьютер был выключен)."""
+    now = now or datetime.now(TZ)
+    st = send_time()
+    return (now.time() >= dtime(st.hour, st.minute)
+            and storage.get_setting("last_daily") != now.date().isoformat()
+            and bool(recipients()))
 
 
 def schedule(app: Application) -> None:
     for job in app.job_queue.get_jobs_by_name("daily"):
         job.schedule_removal()
-    app.job_queue.run_daily(daily_job, time=send_time(), name="daily")
+    # Если компьютер спал в 17:00 и проснулся позже — выгрузка всё равно уйдёт (в пределах 6 часов)
+    app.job_queue.run_daily(daily_job, time=send_time(), name="daily",
+                            job_kwargs={"misfire_grace_time": 6 * 3600, "coalesce": True})
     log.info("Ежедневная выгрузка в %s (%s)", send_time().strftime("%H:%M"), config.TIMEZONE)
 
 
@@ -123,6 +141,12 @@ def schedule(app: Application) -> None:
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     storage.add_chat(update.effective_chat.id)
     await update.message.reply_text(HELP.format(time=send_time().strftime("%H:%M")), parse_mode=ParseMode.HTML)
+
+
+@guarded
+async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    storage.remove_chat(update.effective_chat.id)
+    await update.message.reply_text("Больше не присылаю сюда ежедневную выгрузку. Вернуть — /start")
 
 
 async def cmd_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -271,9 +295,13 @@ async def post_init(app: Application) -> None:
         BotCommand("removesite", "Убрать сайт"),
         BotCommand("settime", "Время ежедневной выгрузки"),
         BotCommand("stats", "Статистика и обучение"),
+        BotCommand("stop", "Отписаться от рассылки"),
         BotCommand("help", "Помощь"),
     ])
     schedule(app)
+    if needs_catch_up():
+        log.info("Сегодняшняя выгрузка ещё не уходила — отправлю через минуту")
+        app.job_queue.run_once(daily_job, when=60, name="catch_up")
 
 
 def main() -> None:
@@ -290,6 +318,7 @@ def main() -> None:
     app.add_handler(CommandHandler("enablesite", cmd_enablesite))
     app.add_handler(CommandHandler("settime", cmd_settime))
     app.add_handler(CommandHandler("stats", cmd_stats))
+    app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     log.info("Бот запущен")

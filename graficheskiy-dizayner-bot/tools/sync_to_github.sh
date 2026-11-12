@@ -20,7 +20,7 @@ mkdir -p "$DST"
 ( cd "$SRC" && tar \
     --exclude=./.venv --exclude=./data --exclude=./.env --exclude=./.claude \
     --exclude=./bot/candidate_private.py --exclude=./пример_выгрузки.xlsx \
-    --exclude='__pycache__' --exclude='~$*' --exclude='*.pyc' \
+    --exclude='__pycache__' --exclude='~$*' --exclude='*.pyc' --exclude='*.zip' --exclude='.pytest_cache' \
     -cf - . ) | ( cd "$DST" && tar -xf - )
 
 # 2. Проверка, что в копию не попали личные данные (значения берём из локального файла)

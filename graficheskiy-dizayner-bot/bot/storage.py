@@ -141,6 +141,11 @@ def add_chat(chat_id: int) -> None:
         c.execute("INSERT OR IGNORE INTO chats(chat_id, added_at) VALUES (?,?)", (chat_id, now()))
 
 
+def remove_chat(chat_id: int) -> None:
+    with db() as c:
+        c.execute("DELETE FROM chats WHERE chat_id=?", (chat_id,))
+
+
 def list_chats() -> list[int]:
     with db() as c:
         return [r[0] for r in c.execute("SELECT chat_id FROM chats")]

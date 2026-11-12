@@ -9,3 +9,5 @@ __pycache__/
 .venv/
 venv/
 ~$*.xlsx
+*.zip
+.pytest_cache/
