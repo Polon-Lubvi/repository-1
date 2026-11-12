@@ -1,0 +1,24 @@
+[
+  {"name": "hh.ru", "url": "https://hh.ru", "kind": "hh"},
+  {"name": "Зарплата.ру", "url": "https://zarplata.ru/", "kind": "zarplata"},
+  {"name": "hirify", "url": "https://hirify.me/graphic-design-jobs", "kind": "hirify"},
+  {"name": "remote-job", "url": "https://remote-job.ru/", "kind": "remote_job"},
+  {"name": "careerspace", "url": "https://careerspace.app/jobs", "kind": "careerspace"},
+  {"name": "SuperJob", "url": "https://superjob.ru/", "kind": "superjob"},
+  {"name": "Карьерист", "url": "https://careerist.ru/", "kind": "careerist"},
+  {"name": "Job for Gamedev (TG)", "url": "https://t.me/forgamedev/", "kind": "telegram"},
+  {"name": "Job for Designers (TG)", "url": "https://t.me/fordesigner/", "kind": "telegram"},
+  {"name": "Портал стартапов (TG)", "url": "https://t.me/designer_ru", "kind": "telegram"},
+  {"name": "vdhl.ru (TG)", "url": "https://t.me/vdhl_good", "kind": "telegram"},
+  {"name": "Я работаю в digital, детка (TG)", "url": "https://t.me/digital_rabota", "kind": "telegram"},
+  {"name": "Люди в Культуре (TG)", "url": "https://t.me/Ludivkulture", "kind": "telegram"},
+
+  {"name": "Хабр Карьера", "url": "https://career.habr.com", "kind": "habr", "extra": true},
+  {"name": "Работа России (trudvsem)", "url": "https://trudvsem.ru", "kind": "trudvsem", "extra": true},
+  {"name": "designer.ru — вакансии", "url": "https://designer.ru/vacancy/", "kind": "designer_ru", "extra": true},
+  {"name": "Design Hunters (TG)", "url": "https://t.me/designhunters", "kind": "telegram", "extra": true},
+  {"name": "Work for Designers (TG)", "url": "https://t.me/workindesign", "kind": "telegram", "extra": true},
+  {"name": "Вакансии Дизайн / Монтаж (TG)", "url": "https://t.me/designer_vacancy", "kind": "telegram", "extra": true},
+  {"name": "RIDU — вакансии для дизайнеров (TG)", "url": "https://t.me/designvacancy", "kind": "telegram", "extra": true},
+  {"name": "Вакансии и проекты на дизайн (TG)", "url": "https://t.me/vakansiidesign", "kind": "telegram", "extra": true}
+]

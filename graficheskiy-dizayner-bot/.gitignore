@@ -1,0 +1,10 @@
+.env
+data/
+# личные данные соискателя и выгрузка с её контактами
+bot/candidate_private.py
+пример_выгрузки.xlsx
+__pycache__/
+*.pyc
+.venv/
+venv/
+~$*.xlsx
