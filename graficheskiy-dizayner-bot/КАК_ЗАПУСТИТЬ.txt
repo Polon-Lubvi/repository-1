@@ -3,8 +3,15 @@
 
 1. УСТАНОВИТЬ PYTHON (один раз)
    - Откройте https://www.python.org/downloads/ и нажмите "Download Python".
-   - В первом окне установщика ОБЯЗАТЕЛЬНО поставьте галочку
+   - Если открылось окно с галочками: ОБЯЗАТЕЛЬНО отметьте
      "Add python.exe to PATH", затем нажмите "Install Now".
+   - Если открылась чёрная консоль "Python installation manager" с вопросами:
+       * "Windows is not configured to allow paths longer than 260..." -> N, Enter
+       * вопрос про установку текущей версии CPython -> y, Enter
+       * вопрос про добавление в PATH -> y, Enter
+       * остальные вопросы -> просто Enter
+   - Проверка: Win+R -> cmd -> Enter -> введите  python --version
+     Должно показать "Python 3.1x.x".
 
 2. РАСПАКОВАТЬ ЭТОТ АРХИВ
    - Если архив скачан из интернета: правой кнопкой по архиву -> Свойства ->
