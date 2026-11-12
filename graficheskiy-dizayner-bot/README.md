@@ -109,3 +109,11 @@ config/sites.json  стартовый список сайтов
 ```
 
 В `data/` лежат база, выгрузки и присланные файлы; эта папка в git не попадает.
+
+## Бэкап на GitHub
+
+`tools/sync_to_github.sh` копирует проект в `_github-backup/graficheskiy-dizayner-bot`
+(без `.venv`, `data/`, `.env`, `bot/candidate_private.py` и примера выгрузки), проверяет копию
+на контакты соискателя и, если есть изменения, коммитит и пушит. В Claude Code он запускается
+автоматически Stop-хуком из `.claude/settings.local.json` после каждого ответа. Вручную:
+`bash tools/sync_to_github.sh`.
