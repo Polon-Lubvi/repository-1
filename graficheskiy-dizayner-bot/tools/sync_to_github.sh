@@ -57,7 +57,7 @@ fi
 
 # 3. Коммит и пуш, только если есть изменения
 cd "$REPO"
-git add -A -- "$SUB"
+git add -A -- "$SUB" 2>/dev/null
 if git diff --cached --quiet -- "$SUB"; then
     exit 0
 fi
