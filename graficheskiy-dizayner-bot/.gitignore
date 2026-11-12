@@ -1,5 +1,6 @@
 .env
 data/
+.claude/settings.local.json
 # личные данные соискателя и выгрузка с её контактами
 bot/candidate_private.py
 пример_выгрузки.xlsx
