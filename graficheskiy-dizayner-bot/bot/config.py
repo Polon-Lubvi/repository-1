@@ -25,6 +25,10 @@ def _ids(name: str) -> list[int]:
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_IDS = _ids("TELEGRAM_CHAT_ID")
 ALLOWED_USER_IDS = _ids("ALLOWED_USER_IDS")
+# Прокси для связи с Telegram, если api.telegram.org не открывается напрямую:
+# http://host:port, socks5://user:pass@host:port и т.п.
+TELEGRAM_PROXY = os.getenv("TELEGRAM_PROXY", "").strip()
+TELEGRAM_TIMEOUT = float(os.getenv("TELEGRAM_TIMEOUT", "60"))
 SEND_TIME = os.getenv("SEND_TIME", "17:00").strip()
 TIMEZONE = os.getenv("TIMEZONE", "Europe/Moscow").strip()
 

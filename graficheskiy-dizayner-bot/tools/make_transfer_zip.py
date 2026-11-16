@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT = Path.home() / "Desktop" / f"bot_vakansii_{datetime.now():%Y-%m-%d}.zip"
 
 INCLUDE_DIRS = ["bot", "config"]
-INCLUDE_FILES = [".env", ".env.example", "requirements.txt", "run_bot.bat", "README.md",
+INCLUDE_FILES = [".env", ".env.example", "requirements.txt", "run_bot.bat", "update.bat", "README.md",
                  "КАК_ЗАПУСТИТЬ.txt", "data/bot.sqlite3"]
 SKIP_PARTS = {"__pycache__"}
 

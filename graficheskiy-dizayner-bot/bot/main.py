@@ -288,27 +288,61 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def post_init(app: Application) -> None:
     from telegram import BotCommand
-    await app.bot.set_my_commands([
-        BotCommand("now", "Собрать выгрузку сейчас"),
-        BotCommand("sites", "Список сайтов"),
-        BotCommand("addsite", "Добавить сайт или канал"),
-        BotCommand("removesite", "Убрать сайт"),
-        BotCommand("settime", "Время ежедневной выгрузки"),
-        BotCommand("stats", "Статистика и обучение"),
-        BotCommand("stop", "Отписаться от рассылки"),
-        BotCommand("help", "Помощь"),
-    ])
+    try:
+        await app.bot.set_my_commands([
+            BotCommand("now", "Собрать выгрузку сейчас"),
+            BotCommand("sites", "Список сайтов"),
+            BotCommand("addsite", "Добавить сайт или канал"),
+            BotCommand("removesite", "Убрать сайт"),
+            BotCommand("settime", "Время ежедневной выгрузки"),
+            BotCommand("stats", "Статистика и обучение"),
+            BotCommand("stop", "Отписаться от рассылки"),
+            BotCommand("help", "Помощь"),
+        ])
+    except Exception as e:  # меню команд — не критично, бот работает и без него
+        log.warning("Не удалось обновить меню команд: %s", e)
     schedule(app)
     if needs_catch_up():
         log.info("Сегодняшняя выгрузка ещё не уходила — отправлю через минуту")
         app.job_queue.run_once(daily_job, when=60, name="catch_up")
 
 
-def main() -> None:
-    if not config.TELEGRAM_BOT_TOKEN:
-        raise SystemExit("Не задан TELEGRAM_BOT_TOKEN — скопируйте .env.example в .env и впишите токен от @BotFather")
-    storage.init()
-    app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).post_init(post_init).build()
+NO_TELEGRAM_HELP = """
+==================================================================
+ Нет связи с Telegram (сервер api.telegram.org не отвечает).
+ Бот будет пробовать подключиться снова каждые {delay} секунд.
+
+ Что сделать:
+  1. Проверьте интернет.
+  2. Откройте в браузере https://api.telegram.org — если страница
+     не открывается, ваш провайдер блокирует Telegram для ботов.
+     Включите VPN на компьютере (для всей системы) — бот подключится сам.
+  3. Или впишите прокси в файл .env:  TELEGRAM_PROXY=socks5://host:port
+==================================================================
+"""
+
+
+def telegram_reachable() -> bool:
+    import requests
+    proxies = {"https": config.TELEGRAM_PROXY, "http": config.TELEGRAM_PROXY} if config.TELEGRAM_PROXY else None
+    try:
+        requests.get("https://api.telegram.org", timeout=15, proxies=proxies)
+        return True
+    except requests.RequestException as e:
+        log.warning("api.telegram.org недоступен: %s", e.__class__.__name__)
+        return False
+
+
+def build_app() -> Application:
+    t = config.TELEGRAM_TIMEOUT
+    b = (Application.builder().token(config.TELEGRAM_BOT_TOKEN).post_init(post_init)
+         .connect_timeout(t).read_timeout(t).write_timeout(t).pool_timeout(t).media_write_timeout(t * 2)
+         .get_updates_connect_timeout(t).get_updates_read_timeout(t + 30)
+         .get_updates_write_timeout(t).get_updates_pool_timeout(t))
+    if config.TELEGRAM_PROXY:
+        b = b.proxy(config.TELEGRAM_PROXY).get_updates_proxy(config.TELEGRAM_PROXY)
+        log.info("Связь с Telegram через прокси")
+    app = b.build()
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
     app.add_handler(CommandHandler("id", cmd_id))
     app.add_handler(CommandHandler("now", cmd_now))
@@ -321,8 +355,36 @@ def main() -> None:
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
-    log.info("Бот запущен")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    return app
+
+
+def main() -> None:
+    import time
+    from telegram.error import InvalidToken, NetworkError
+
+    if not config.TELEGRAM_BOT_TOKEN:
+        raise SystemExit("Не задан TELEGRAM_BOT_TOKEN — скопируйте .env.example в .env и впишите токен от @BotFather")
+    storage.init()
+    delay = 30
+    while True:
+        if not telegram_reachable():
+            print(NO_TELEGRAM_HELP.format(delay=delay), flush=True)
+            time.sleep(delay)
+            delay = min(delay * 2, 300)
+            continue
+        delay = 30
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        try:
+            log.info("Подключаюсь к Telegram…")
+            # bootstrap_retries=-1: при старте не падать на сетевых сбоях, а повторять
+            build_app().run_polling(allowed_updates=Update.ALL_TYPES, bootstrap_retries=-1, close_loop=False)
+            return  # штатная остановка (Ctrl+C)
+        except InvalidToken:
+            raise SystemExit("Telegram не принял токен. Проверьте TELEGRAM_BOT_TOKEN в .env (без пробелов и кавычек).")
+        except NetworkError as e:
+            log.warning("Связь с Telegram прервалась (%s). Повтор через %s c.", e, delay)
+            time.sleep(delay)
+            delay = min(delay * 2, 300)
 
 
 if __name__ == "__main__":

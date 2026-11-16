@@ -382,6 +382,43 @@ def test_tc04_daily_job_marks_day_and_survives_blocked_chat(monkeypatch, tmp_pat
     assert storage.get_setting("last_daily") == datetime.now(main.TZ).date().isoformat()
 
 
+def test_network_build_app_timeouts_and_proxy(monkeypatch):
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:TEST")
+    monkeypatch.setattr(config, "TELEGRAM_PROXY", "socks5://127.0.0.1:1080")
+    app = main.build_app()
+    req = app.bot._request[1]  # обычные запросы (0 — getUpdates)
+    assert req._client_kwargs["timeout"].connect == config.TELEGRAM_TIMEOUT
+    assert "1080" in str(req._client_kwargs.get("proxy") or req._client_kwargs.get("mounts"))
+    assert len(app.handlers[0]) >= 11
+
+
+def test_network_main_retries_instead_of_crashing(monkeypatch):
+    from telegram.error import TimedOut
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:TEST")
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    reach = iter([False, True, True])
+    monkeypatch.setattr(main, "telegram_reachable", lambda: next(reach))
+    runs = []
+
+    class FakeApp:
+        def run_polling(self, **kw):
+            runs.append(kw)
+            if len(runs) == 1:
+                raise TimedOut("Timed out")
+    monkeypatch.setattr(main, "build_app", lambda: FakeApp())
+    main.main()  # не должен упасть: недоступно → повтор, TimedOut → повтор, затем штатный выход
+    assert len(runs) == 2 and runs[0]["bootstrap_retries"] == -1
+
+
+def test_network_post_init_survives_menu_failure(monkeypatch):
+    from telegram.error import TimedOut
+    from telegram.ext import Application
+    app = Application.builder().token("123:TEST").build()
+    monkeypatch.setattr(type(app.bot), "set_my_commands", AsyncMock(side_effect=TimedOut("x")))
+    run(main.post_init(app))
+    assert app.job_queue.get_jobs_by_name("daily")
+
+
 def test_stop_unsubscribes():
     run(main.cmd_start(make_update(chat_id=777), make_ctx()))
     u = make_update(chat_id=777)
