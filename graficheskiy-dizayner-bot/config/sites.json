@@ -22,8 +22,12 @@
   {"name": "RIDU — вакансии для дизайнеров (TG)", "url": "https://t.me/designvacancy", "kind": "telegram", "extra": true},
   {"name": "Вакансии и проекты на дизайн (TG)", "url": "https://t.me/vakansiidesign", "kind": "telegram", "extra": true},
   {"name": "Работа.ру", "url": "https://www.rabota.ru/vacancy/?query=графический%20дизайнер", "kind": "generic", "extra": true},
-  {"name": "Illustrators.ru — заказы", "url": "https://illustrators.ru/jobs", "kind": "generic", "extra": true},
+  {"name": "Illustrators.ru — заказы", "url": "https://illustrators.ru/jobs", "kind": "illustrators", "extra": true},
   {"name": "Фриланс Таверна (TG)", "url": "https://t.me/freelancetaverna", "kind": "telegram", "extra": true},
   {"name": "Норм работа (TG)", "url": "https://t.me/normrabota", "kind": "telegram", "extra": true},
-  {"name": "Вакансии в образовании (TG)", "url": "https://t.me/edujobs", "kind": "telegram", "extra": true}
+  {"name": "Вакансии в образовании (TG)", "url": "https://t.me/edujobs", "kind": "telegram", "extra": true},
+  {"name": "FL.ru — заказы (RSS)", "url": "https://www.fl.ru/rss/all.xml", "kind": "rss", "extra": true},
+  {"name": "Pchel.net — заказы (RSS)", "url": "https://pchel.net/rss/", "kind": "rss", "extra": true},
+  {"name": "Kwork — заказы на дизайн", "url": "https://kwork.ru/projects?c=15", "kind": "kwork", "extra": true},
+  {"name": "Dprofile — вакансии и проекты", "url": "https://dprofile.ru/jobs", "kind": "dprofile", "extra": true}
 ]

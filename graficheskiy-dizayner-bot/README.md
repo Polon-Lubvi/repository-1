@@ -36,8 +36,16 @@ Telegram-бот: каждый день в 17:00 (МСК) присылает в �
 Из файла заказчика: hh.ru, Зарплата.ру, hirify, remote-job, careerspace, SuperJob, Карьерист и
 6 Telegram-каналов (forgamedev, fordesigner, designer_ru, vdhl_good, digital_rabota, Ludivkulture).
 
-Добавлены дополнительно: Хабр Карьера, Работа России (trudvsem, открытый API), designer.ru,
-Telegram-каналы designhunters, workindesign, designer_vacancy, designvacancy, vakansiidesign.
+Добавлены дополнительно: Хабр Карьера, Работа России (trudvsem, открытый API), designer.ru, Работа.ру,
+Telegram-каналы designhunters, workindesign, designer_vacancy, designvacancy, vakansiidesign,
+freelancetaverna, normrabota, edujobs.
+
+Фриланс-заказы (помечаются как «проектная работа», бюджет не сравнивается с зарплатой):
+FL.ru и Pchel.net (официальные RSS-ленты), Kwork (рубрика «Дизайн»), Dprofile, Illustrators.ru.
+Любой сайт с RSS-лентой можно добавить командой `/addsite ссылка_на_ленту.xml`.
+
+Не подключены намеренно: Хабр Фриланс (robots.txt запрещает ботов), Avito и Weblancer (блокируют
+программы), Сетка, Workzilla, YouDo, карьерный центр Нетологии (только после входа в аккаунт).
 
 Управление из бота:
 

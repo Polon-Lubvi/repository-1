@@ -87,6 +87,74 @@ def test_tc11_parsers():
     assert sources.title_ok("Графический дизайнер") and not sources.title_ok("Бухгалтер")
 
 
+RSS = """<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>FL</title>
+<item><title>Изготовление 3-х логотипов (Бюджет: 5000 &#8381;)</title><link>https://www.fl.ru/projects/1/logo.html</link>
+<description>Нужно сделать три логотипа для кофейни в едином стиле, фирменные цвета, варианты для соцсетей. Бюджет: 5000 руб</description>
+<pubDate>Mon, 16 Nov 2026 10:00:00 +0300</pubDate><category>Дизайн и Арт</category></item>
+<item><title>Программирование / верстка Битрикс</title><link>https://www.fl.ru/projects/2/b.html</link>
+<description>Битрикс</description><pubDate>Mon, 16 Nov 2026 10:00:00 +0300</pubDate></item>
+<item><title>Написать статьи для блога</title><link>https://www.fl.ru/projects/3/t.html</link>
+<description>Тексты</description><pubDate>Mon, 16 Nov 2026 10:00:00 +0300</pubDate></item>
+</channel></rss>"""
+
+
+def test_freelance_rss_parsing(monkeypatch):
+    monkeypatch.setattr(sources, "get", lambda url, params=None, timeout=25: SimpleNamespace(content=RSS.encode(), text=RSS))
+    items = sources.rss({"name": "FL.ru", "url": "https://www.fl.ru/rss/all.xml"})
+    assert len(items) == 1
+    v = items[0]
+    assert v["title"] == "Изготовление 3-х логотипов" and v["project"] and v["published"].day == 16
+    assert "5000" in v["salary"]
+    v = scoring.score(v)
+    assert not v["excluded"] and not any("зарплата" in w for w in v["warnings"])
+
+
+def test_freelance_kwork_parsing(monkeypatch):
+    import json as _json
+    state = {"wantsListData": {"wants": [
+        {"id": 1, "name": "Создание логотипа", "description": "Логотип для пекарни", "priceLimit": "1000.00",
+         "date_create": "2026-11-17 19:32:42"},
+        {"id": 2, "name": "Визуализация интерьера", "description": "3D", "priceLimit": "3000.00",
+         "date_create": "2026-11-17 19:32:42"}]}}
+    page = f"<script>window.stateData = {_json.dumps(state, ensure_ascii=False)};</script>"
+    monkeypatch.setattr(sources, "get", lambda url, params=None, timeout=25: SimpleNamespace(text=page))
+    monkeypatch.setattr(sources.time, "sleep", lambda s: None)
+    items = sources.kwork({"name": "Kwork", "url": "https://kwork.ru/projects"})
+    assert [v["title"] for v in items] == ["Создание логотипа"]
+    assert items[0]["url"] == "https://kwork.ru/projects/1/view" and items[0]["salary"] == "до 1 000 ₽"
+
+
+def test_freelance_detect_kind_and_title_filter():
+    assert sources.detect_kind("https://www.fl.ru/rss/all.xml") == "rss"
+    assert sources.detect_kind("https://pchel.net/rss/") == "rss"
+    assert sources.detect_kind("https://kwork.ru/projects?c=15") == "kwork"
+    assert sources.detect_kind("https://illustrators.ru/jobs") == "illustrators"
+    assert sources.title_ok("Нарисовать логотип для кофейни", project=True)
+    assert not sources.title_ok("Нарисовать логотип для кофейни")      # как вакансия — не должность
+    assert not sources.title_ok("Логистика и доставка", project=True)
+    assert not sources.title_ok("Дизайн проект квартиры", project=True)
+
+
+def test_tc11_date_in_text():
+    assert sources.date_in_text("Опубликовано 13 февраля 2024. Обновлено 6 июля 2024").date().isoformat() == "2024-07-06"
+    assert sources.date_in_text("Дата: 05.03.2025").date().isoformat() == "2025-03-05"
+    assert sources.date_in_text("© 2026 Все права защищены") is None
+    assert sources.date_in_text("Дедлайн 31 декабря 2099") is None  # будущие даты не считаем
+
+
+def test_tc06_old_vacancy_without_listing_date_dropped(monkeypatch):
+    """Случай remote-job: в поиске даты нет, на странице — «13 февраля 2024»."""
+    old = vac(key="rj:old", url="https://remote-job.ru/vacancy/show/784147", published=None, description="")
+    monkeypatch.setattr(sources, "collect_site", lambda site: [dict(old)])
+    monkeypatch.setattr(sources, "fetch_detail", lambda url: {
+        "title": "Графический дизайнер", "description": "Вакансия от 13 февраля 2024. Ищем дизайнера логотипов "
+        "и айдентики на удалёнку, задачи по брендингу и упаковке.",
+        "published": sources.date_in_text("13 февраля 2024")})
+    monkeypatch.setattr(sources.time, "sleep", lambda s: None)
+    vs, _ = pipeline.collect(sites=[{"name": "rj", "url": "u", "kind": "remote_job"}])
+    assert vs == []
+
+
 def test_tc11_main_text_skips_link_lists():
     from bs4 import BeautifulSoup
     html = ("<body><ul>" + "".join(f"<li><a href='/v/{i}'>Другая вакансия дизайнера номер {i}</a></li>" for i in range(30))

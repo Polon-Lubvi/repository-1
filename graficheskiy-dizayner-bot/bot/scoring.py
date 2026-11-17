@@ -79,7 +79,8 @@ def score(v: dict, bonus: Counter | None = None) -> dict:
     reasons, warnings = [], []
     v["excluded"] = ""
 
-    if not title or not any(w in title for w in candidate.DESIGN_TITLE_WORDS):
+    title_words = candidate.PROJECT_TITLE_WORDS if v.get("project") else candidate.DESIGN_TITLE_WORDS
+    if not title or not any(w in title for w in title_words):
         v["excluded"] = "не дизайнерская должность"
     elif any(w in title for w in candidate.EXCLUDE_TITLE):
         v["excluded"] = "неподходящее направление (маркетплейсы / UX / интерьер и т.п.)"
@@ -132,7 +133,9 @@ def score(v: dict, bonus: Counter | None = None) -> dict:
         s -= 1.5
         warnings.append(f"просят опыт от {exp.group(1)} лет")
 
-    nums = _salary_numbers(v.get("salary", ""))
+    nums = [] if v.get("project") else _salary_numbers(v.get("salary", ""))  # бюджет заказа ≠ зарплата
+    if v.get("project"):
+        reasons.append("проектная работа — подходит для подработки и портфолио")
     if nums:
         top = max(nums)
         if top >= candidate.DESIRED_SALARY:

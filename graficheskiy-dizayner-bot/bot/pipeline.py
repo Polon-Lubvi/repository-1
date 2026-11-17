@@ -31,7 +31,7 @@ def collect(sites=None, limit: int | None = None) -> tuple[list[dict], dict]:
             if sent.is_dup(v):  # по ссылке, а если есть компания — и по «название + компания»
                 st["dup"] += 1
                 continue
-            if v["title"] and not sources.title_ok(v["title"]):
+            if v["title"] and not sources.title_ok(v["title"], v.get("project", False)):
                 continue
             if v["published"] and v["published"] < border:
                 continue

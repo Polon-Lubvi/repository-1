@@ -130,9 +130,10 @@ def _has(text: str, words) -> bool:
     return any(w in t for w in words)
 
 
-def title_ok(title: str) -> bool:
+def title_ok(title: str, project: bool = False) -> bool:
     t = (title or "").lower()
-    return bool(t) and _has(t, candidate.DESIGN_TITLE_WORDS) and not _has(t, candidate.EXCLUDE_TITLE)
+    words = candidate.PROJECT_TITLE_WORDS if project else candidate.DESIGN_TITLE_WORDS
+    return bool(t) and _has(t, words) and not _has(t, candidate.EXCLUDE_TITLE)
 
 
 def new_vac(**kw) -> dict:
@@ -246,14 +247,46 @@ def fetch_detail(url: str) -> dict:
         m = re.search(r"(?:дата публикации|опубликовано)\s*:?\s*([^.\n]{4,25})", og.get("content", "") if og else "", re.I)
         if m:
             out["published"] = parse_ru_date(m.group(1))
+    if not out.get("published"):
+        # Последний шанс: полная дата в тексте страницы («13 февраля 2024», «13.02.2024»).
+        # Так у remote-job: на карточке в поиске даты нет, а старые вакансии 2023–2024 годов попадаются.
+        for tag in soup(["script", "style", "noscript"]):
+            tag.decompose()
+        out["published"] = date_in_text(soup.get_text(" "))
     return out
+
+
+_FULL_DATE_RU = re.compile(r"\b(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|"
+                           r"октября|ноября|декабря)\s+(20\d\d)\b", re.I)
+_FULL_DATE_NUM = re.compile(r"\b(\d{1,2})\.(\d{1,2})\.(20\d\d)\b")
+
+
+def date_in_text(text: str) -> datetime | None:
+    """Самая поздняя полная дата в тексте (не из будущего). None, если дат с годом нет."""
+    months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
+              "октября", "ноября", "декабря"]
+    now = datetime.now(MSK)
+    found = []
+    for d, mon, y in _FULL_DATE_RU.findall(text or ""):
+        found.append((int(y), months.index(mon.lower()) + 1, int(d)))
+    for d, m, y in _FULL_DATE_NUM.findall(text or ""):
+        found.append((int(y), int(m), int(d)))
+    dates = []
+    for y, m, d in found:
+        try:
+            dt = datetime(y, m, d, tzinfo=MSK)
+        except ValueError:
+            continue
+        if datetime(2015, 1, 1, tzinfo=MSK) <= dt <= now + timedelta(days=1):
+            dates.append(dt)
+    return max(dates) if dates else None
 
 
 COMPANY_IN_TITLE = re.compile(r"^(.{2,50}?)\s+(?:ищет|ищут|приглашает|ищем)\s", re.I)
 
 
 def enrich(v: dict) -> dict:
-    if len(v.get("description") or "") < 200:
+    if len(v.get("description") or "") < 200 and not v.get("no_detail"):
         d = fetch_detail(v["url"])
         for k, val in d.items():
             if val and (not v.get(k) or k == "description"):
@@ -527,6 +560,113 @@ def careerspace(site) -> list[dict]:
     return list(out.values())
 
 
+_CARD_DATE = re.compile(r"^(сегодня|вчера|\d{1,2}\s+[а-я]+)", re.I)
+
+
+def illustrators(site) -> list[dict]:
+    """illustrators.ru/jobs: страница заказа видна только после входа, поэтому берём всё из карточки списка."""
+    r = get("https://illustrators.ru/jobs")
+    if not r:
+        return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    out = {}
+    for a in soup.find_all("a", href=re.compile(r"^(https://illustrators\.ru)?/jobs/[a-z0-9-]+$")):
+        slug = a["href"].rsplit("/", 1)[-1]
+        if slug in ("services", "new") or slug in out:
+            continue
+        card = a
+        while card.parent is not None and "Откликов" not in card.get_text():
+            card = card.parent
+        if card.get_text().count("Откликов") != 1:  # поднялись до списка из нескольких карточек
+            continue
+        parts = [p.strip(" …") for p in card.get_text("|", strip=True).split("|") if p.strip(" …")]
+        date = next((parse_ru_date(p) for p in parts if _CARD_DATE.match(p)), None)
+        budget = next((p for p in parts if "Бюджет" in p or re.search(r"\d\s*(р|₽|руб)", p)), "")
+        desc = " ".join(p for p in parts[1:] if p not in (budget,) and not _CARD_DATE.match(p)
+                        and not p.startswith("Откликов"))
+        out[slug] = new_vac(key=f"illu:{slug}", url=f"https://illustrators.ru/jobs/{slug}", source=site["name"],
+                            title=parts[0][:150], salary=budget.replace("Бюджет ", ""), published=date,
+                            description=desc[:1500], work_format="удалённо", no_detail=True)
+    return list(out.values())
+
+
+# ---------------------------------------------------------------- фриланс: RSS, Kwork, Dprofile
+def rss(site) -> list[dict]:
+    """Любая RSS-лента заказов/вакансий (FL.ru, Pchel.net и др.). Берём только задачи про дизайн."""
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    r = get(site["url"])
+    if not r:
+        return []
+    try:
+        root = ET.fromstring(r.content)
+    except ET.ParseError:
+        log.warning("%s: не похоже на RSS", site["url"])
+        return []
+    out = []
+    for it in root.iter("item"):
+        def txt(tag):
+            el = it.find(tag)
+            return (el.text or "").strip() if el is not None else ""
+        title, link = htmllib.unescape(txt("title")), txt("link")
+        cat = " ".join((c.text or "") for c in it.findall("category"))
+        if not link or not title_ok(f"{title} {cat}", project=True):
+            continue
+        try:
+            pub = parsedate_to_datetime(txt("pubDate")) if txt("pubDate") else None
+        except (TypeError, ValueError):
+            pub = None
+        desc = html_to_text(txt("description"))
+        budget = re.search(r"(?:бюджет|budget)\s*:?\s*([^\n.]{1,40})", desc, re.I) or \
+            re.search(r"\(\s*(?:бюджет|budget)?:?\s*([\d\s]+(?:&#8381;|₽|руб|р)\.?)", title, re.I)
+        out.append(new_vac(key=f"rss:{link.split('?')[0]}", url=link, source=site["name"],
+                           title=re.sub(r"\s*\((?:бюджет|budget)[^)]*\)\s*$", "", title, flags=re.I)[:150],
+                           description=desc[:3000], published=pub, work_format="удалённо",
+                           salary=htmllib.unescape(budget.group(1)).strip() if budget else "",
+                           project=True, no_detail=len(desc) >= 120))
+    return out
+
+
+def kwork(site) -> list[dict]:
+    """Kwork, биржа проектов, рубрика «Дизайн» (c=15). Заказы лежат в window.stateData страницы."""
+    out = {}
+    for page in (1, 2):
+        r = get("https://kwork.ru/projects", params={"c": 15, "page": page})
+        if not r:
+            break
+        i = r.text.find("window.stateData")
+        if i < 0:
+            break
+        try:
+            state, _ = json.JSONDecoder().raw_decode(r.text[r.text.find("{", i):])
+        except json.JSONDecodeError:
+            break
+        for w in (state.get("wantsListData") or {}).get("wants") or []:
+            if not title_ok(w.get("name", ""), project=True):
+                continue
+            price = w.get("priceLimit")
+            out[w["id"]] = new_vac(
+                key=f"kwork:{w['id']}", url=f"https://kwork.ru/projects/{w['id']}/view", source=site["name"],
+                title=w.get("name", "")[:150], description=html_to_text(w.get("description") or "")[:3000],
+                salary=f"до {int(float(price)):,} ₽".replace(",", " ") if price else "",
+                published=parse_date((w.get("date_create") or "").replace(" ", "T") + "+03:00"),
+                work_format="удалённо", project=True, no_detail=True)
+        time.sleep(0.8)
+    return list(out.values())
+
+
+def dprofile(site) -> list[dict]:
+    """Dprofile — сообщество дизайнеров: вакансии и проекты."""
+    out = []
+    for path, is_project in (("/jobs/vacancies", False), ("/jobs/projects", True)):
+        for v in _links_from_listing(site, "https://dprofile.ru" + path, r"^/job/\d+/", need_design_title=False):
+            v["key"] = "dprofile:" + re.search(r"/job/(\d+)", v["url"]).group(1)
+            v["project"] = is_project
+            out.append(v)
+        time.sleep(0.7)
+    return out
+
+
 def designer_ru(site) -> list[dict]:
     return _links_from_listing(site, "https://designer.ru/vacancy/", r"^/vacancy/[a-z0-9-]{6,}/$")
 
@@ -620,18 +760,23 @@ def telegram(site) -> list[dict]:
 ADAPTERS = {
     "hh": hh, "zarplata": zarplata, "habr": habr, "trudvsem": trudvsem, "superjob": superjob,
     "careerist": careerist, "remote_job": remote_job, "hirify": hirify, "careerspace": careerspace,
-    "designer_ru": designer_ru, "telegram": telegram, "generic": generic,
+    "designer_ru": designer_ru, "telegram": telegram, "generic": generic, "illustrators": illustrators,
+    "rss": rss, "kwork": kwork, "dprofile": dprofile,
 }
 KNOWN_DOMAINS = {
     "hh.ru": "hh", "zarplata.ru": "zarplata", "career.habr.com": "habr", "trudvsem.ru": "trudvsem",
     "superjob.ru": "superjob", "careerist.ru": "careerist", "remote-job.ru": "remote_job",
     "hirify.me": "hirify", "careerspace.app": "careerspace", "designer.ru": "designer_ru",
-    "t.me": "telegram", "telegram.me": "telegram",
+    "t.me": "telegram", "telegram.me": "telegram", "illustrators.ru": "illustrators",
+    "kwork.ru": "kwork", "dprofile.ru": "dprofile",
 }
 
 
 def detect_kind(url: str) -> str:
-    host = urlparse(url if "://" in url else "https://" + url).netloc.lower().removeprefix("www.")
+    parsed = urlparse(url if "://" in url else "https://" + url)
+    if re.search(r"(\.xml|\.rss|/rss/?|/feed/?)$", parsed.path.lower()):
+        return "rss"
+    host = parsed.netloc.lower().removeprefix("www.")
     for dom, kind in KNOWN_DOMAINS.items():
         if host == dom or host.endswith("." + dom):
             return kind
@@ -648,7 +793,10 @@ def normalize_url(url: str) -> str:
 
 
 def collect_site(site) -> list[dict]:
-    fn = ADAPTERS.get(site["kind"], generic)
+    kind = site["kind"]
+    if kind == "generic":  # сайт добавили раньше, чем у бота появился для него свой разборщик
+        kind = detect_kind(site["url"])
+    fn = ADAPTERS.get(kind, generic)
     try:
         items = fn(site)
     except Exception:  # один сломанный сайт не должен ронять всю выгрузку
