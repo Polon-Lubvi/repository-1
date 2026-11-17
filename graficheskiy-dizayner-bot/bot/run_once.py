@@ -23,7 +23,7 @@ def main():
         return
     path, vacs, stats = pipeline.make_report(mark_sent=args.mark_sent, limit=args.limit)
     for name, st in stats.items():
-        print(f"{name:<40} найдено {st['found']:>3}  новых {st['new']:>3}  подходит {st['fit']:>3}")
+        print(f"{name:<40} найдено {st['found']:>3}  новых {st['new']:>3}  повторов {st.get('dup', 0):>3}  подходит {st['fit']:>3}")
     print(f"\nВ выгрузке: {len(vacs)}  →  {path}")
 
 

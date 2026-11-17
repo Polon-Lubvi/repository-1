@@ -2,7 +2,7 @@
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import config
 
@@ -104,6 +104,14 @@ def save_sent(items: list[dict]) -> None:
                 " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (v["key"], v["url"], v["source"], v["title"], v.get("company", ""), v.get("description", "")[:20000],
                  v.get("summary", ""), v.get("why", ""), v.get("letter", ""), v.get("score", 0), now()))
+
+
+def recent_sent(days: int = 45) -> list[sqlite3.Row]:
+    """Вакансии, отправленные за последние N дней, — для поиска повторов по содержанию."""
+    since = (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+    with db() as c:
+        return c.execute("SELECT key,url,title,company,description FROM vacancies WHERE sent_at >= ?",
+                         (since,)).fetchall()
 
 
 def vacancy_by_url(url: str):

@@ -205,6 +205,69 @@ def test_tc06_no_repeats(monkeypatch):
     assert pipeline.collect(sites=[site])[0] == []
 
 
+DESC = ("Студия брендинга ищет графического дизайнера на удалённую работу. Задачи: разработка логотипов, "
+        "фирменного стиля, брендбуков, упаковки и презентаций для клиентов из сферы образования и культуры. "
+        "Требования: уверенное владение Figma, Illustrator, InDesign, портфолио с проектами айдентики, "
+        "внимательность к деталям и соблюдение сроков. Условия: полная занятость, гибкий график, белая зарплата.")
+
+
+def _collect_with(monkeypatch, per_site: dict[str, list[dict]]):
+    monkeypatch.setattr(sources, "collect_site", lambda site: [dict(v) for v in per_site[site["name"]]])
+    monkeypatch.setattr(sources, "enrich", lambda v: v)
+    vs, stats = pipeline.collect(sites=[{"name": n, "url": n, "kind": "generic"} for n in per_site])
+    return vs, stats
+
+
+def test_tc06_dup_same_vacancy_on_two_sites(monkeypatch):
+    hh = vac(key="hh:1", url="https://hh.ru/vacancy/1", company="Ромашка", description=DESC)
+    trud = vac(key="trud:9", url="https://trudvsem.ru/v/9", company='ООО "Ромашка"',
+               title="Графический дизайнер (удалённо)", description="Вакансия компании: " + DESC)
+    vs, _ = _collect_with(monkeypatch, {"hh": [hh], "trud": [trud]})
+    assert len(vs) == 1
+
+
+def test_tc06_dup_across_days_by_content(monkeypatch):
+    first = vac(key="rj:1", url="https://remote-job.ru/vacancy/show/1", company="", description=DESC)
+    vs, _ = _collect_with(monkeypatch, {"rj": [first]})
+    storage.save_sent(vs)
+    repost = vac(key="rj:2", url="https://remote-job.ru/vacancy/show/2", company="", title="Дизайнер",
+                 description=DESC + " Откликайтесь!")
+    vs2, stats = _collect_with(monkeypatch, {"rj": [repost]})
+    assert vs2 == [] and stats["rj"]["dup"] == 1
+
+
+def test_tc06_dup_telegram_repost_in_two_channels(monkeypatch):
+    a = vac(key="tg:a/1", url="https://t.me/a/1", company="", description=DESC)
+    b = vac(key="tg:b/7", url="https://t.me/b/7", company="", description="#вакансия\n" + DESC)
+    vs, _ = _collect_with(monkeypatch, {"a": [a], "b": [b]})
+    assert len(vs) == 1
+
+
+def test_tc06_different_vacancies_not_merged(monkeypatch):
+    other = ("Издательство ищет верстальщика-дизайнера для подготовки журналов и каталогов к печати. "
+             "Работа с InDesign, подготовка макетов, допечатная подготовка, взаимодействие с редакцией, "
+             "контроль качества цветопробы и соблюдение графика выпуска номеров каждую неделю в офисе.")
+    v1 = vac(key="x:1", url="https://x/1", company="", title="Графический дизайнер", description=DESC)
+    v2 = vac(key="x:2", url="https://x/2", company="", title="Графический дизайнер", description=other)
+    v3 = vac(key="x:3", url="https://x/3", company="Ромашка", title="Дизайнер упаковки", description="")
+    v4 = vac(key="x:4", url="https://x/4", company="Ромашка", title="Дизайнер презентаций", description="")
+    # одна компания, общий абзац «о компании», но разные должности (случай X5)
+    v5 = vac(key="x:5", url="https://x/5", company="X5", title="Дизайнер упаковки", description=DESC)
+    v6 = vac(key="x:6", url="https://x/6", company="X5", title="Дизайнер-верстальщик", description=DESC)
+    vs, _ = _collect_with(monkeypatch, {"x": [v1, v2, v3, v4, v5, v6]})
+    assert len(vs) == 6  # все шесть — разные вакансии
+    titles = sorted(v["title"] for v in vs)
+    assert "Дизайнер-верстальщик" in titles and titles.count("Дизайнер упаковки") == 2
+
+
+def test_tc06_dedup_helpers():
+    from bot import dedup
+    assert dedup.norm_company('ООО «Ромашка»') == dedup.norm_company("Ромашка")
+    assert dedup.norm_title("Графический дизайнер (удалённо)") == dedup.norm_title("Графический дизайнер")
+    assert dedup.title_company_key("Дизайнер", "Company hidden") is None
+    assert dedup.title_company_key("Дизайнер", "") is None
+
+
 def test_tc06_old_vacancies_skipped(monkeypatch):
     old = vac(url="https://e.com/old", key="k:old", published=datetime.now(sources.MSK) - timedelta(days=30))
     monkeypatch.setattr(sources, "collect_site", lambda site: [old])

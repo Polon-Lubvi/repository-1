@@ -447,8 +447,9 @@ def remote_job(site) -> list[dict]:
             sal = re.search(r"(от\s*[\d\s]+(?:до\s*[\d\s]+)?руб\.?|до\s*[\d\s]+руб\.?)", text)
             # карточка: «Название | дата, | Компания | зарплата | текст…»
             parts = [p.strip(" ,") for p in text.split("|")]
+            title_low = re.sub(r"\s+", " ", a.get_text(" ")).lower()
             company = next((p for p in parts[1:4] if p and not re.search(r"\d{4}|руб|^от |^до |^\(", p)
-                            and len(p) < 60), "")
+                            and len(p) < 60 and p.lower() not in title_low), "")
             out[url] = new_vac(
                 url=url, source=site["name"], company=company,
                 title=re.sub(r"\s*\(удал[её]нная работа\)", "", re.sub(r"\s+", " ", a.get_text("")).strip()),

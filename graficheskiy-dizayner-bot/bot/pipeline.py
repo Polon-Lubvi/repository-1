@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from . import config, excel_io, letters, scoring, sources, storage
+from . import config, dedup, excel_io, letters, scoring, sources, storage
 
 log = logging.getLogger(__name__)
 
@@ -14,17 +14,22 @@ log = logging.getLogger(__name__)
 def collect(sites=None, limit: int | None = None) -> tuple[list[dict], dict]:
     """Возвращает (вакансии для выгрузки, статистика по источникам)."""
     sites = sites if sites is not None else storage.list_sites(only_enabled=True)
-    seen = storage.seen_keys()
+    # Что уже отправляли: все ссылки за всё время + содержание за последние 45 дней
+    sent = dedup.Seen()
+    sent.keys = storage.seen_keys()
+    for r in storage.recent_sent(45):
+        sent.add(r["key"], r["url"], r["title"] or "", r["company"] or "", r["description"] or "")
     border = datetime.now(sources.MSK) - timedelta(days=config.FRESH_DAYS)
     bonus = scoring.learned_bonus()
     stats: dict[str, dict] = {}
 
     def run_site(site):
         raw = sources.collect_site(site)
-        st = {"found": len(raw), "new": 0, "fit": 0}
+        st = {"found": len(raw), "new": 0, "fit": 0, "dup": 0}
         cand = []
         for v in raw:
-            if v["key"] in seen or v["url"] in seen:
+            if sent.is_dup(v):  # по ссылке, а если есть компания — и по «название + компания»
+                st["dup"] += 1
                 continue
             if v["title"] and not sources.title_ok(v["title"]):
                 continue
@@ -41,6 +46,9 @@ def collect(sites=None, limit: int | None = None) -> tuple[list[dict], dict]:
             sources.enrich(v)
             if v["published"] and v["published"] < border:
                 continue
+            if sent.is_dup(v):  # после чтения страницы известны компания и описание
+                st["dup"] += 1
+                continue
             scoring.score(v, bonus)
             if not v["excluded"]:
                 picked.append(v)
@@ -51,14 +59,18 @@ def collect(sites=None, limit: int | None = None) -> tuple[list[dict], dict]:
     with ThreadPoolExecutor(max_workers=6) as ex:
         results = list(ex.map(run_site, sites))
 
-    # убираем дубли между сайтами (одна вакансия на hh и zarplata, или в двух каналах)
-    best: dict[str, dict] = {}
-    for v in (v for chunk in results for v in chunk):
-        company = (v.get("company") or "").lower().strip()
-        k = f"{v['title'].lower().strip()[:60]}|{company[:40]}" if company else v["key"]
-        if k not in best or v["score"] > best[k]["score"]:
-            best[k] = v
-    vacs = sorted(best.values(), key=lambda x: (x["score"], x["published"] or border), reverse=True)
+    # Убираем повторы внутри сегодняшней выгрузки (одна вакансия на нескольких сайтах/каналах):
+    # из повторов остаётся копия с лучшей оценкой, при равенстве — с более полным описанием.
+    allv = sorted((v for chunk in results for v in chunk),
+                  key=lambda x: (x["score"], len(x.get("description") or "")), reverse=True)
+    batch = dedup.Seen()
+    vacs = []
+    for v in allv:
+        if batch.is_dup(v):
+            continue
+        batch.add_vac(v)
+        vacs.append(v)
+    vacs.sort(key=lambda x: (x["score"], x["published"] or border), reverse=True)
     vacs = vacs[: (limit or config.MAX_VACANCIES)]
     return vacs, stats
 
