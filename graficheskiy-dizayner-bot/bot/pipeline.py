@@ -71,7 +71,9 @@ def collect(sites=None, limit: int | None = None) -> tuple[list[dict], dict]:
         batch.add_vac(v)
         vacs.append(v)
     vacs.sort(key=lambda x: (x["score"], x["published"] or border), reverse=True)
-    vacs = vacs[: (limit or config.MAX_VACANCIES)]
+    cap = limit or config.MAX_VACANCIES
+    if cap and cap > 0:
+        vacs = vacs[:cap]
     return vacs, stats
 
 

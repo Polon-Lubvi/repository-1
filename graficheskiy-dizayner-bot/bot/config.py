@@ -35,7 +35,10 @@ TIMEZONE = os.getenv("TIMEZONE", "Europe/Moscow").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-5-5").strip()
 
-MAX_VACANCIES = int(os.getenv("MAX_VACANCIES", "40"))
+# Максимум вакансий в одной выгрузке; 0 — без ограничения (попадают все подходящие).
+# Раньше настройка называлась MAX_VACANCIES (=40) — старое имя намеренно больше не читается,
+# чтобы у тех, у кого оно осталось в .env, лимит снялся без ручной правки.
+MAX_VACANCIES = int(os.getenv("VACANCY_LIMIT", "0") or 0)
 FRESH_DAYS = int(os.getenv("FRESH_DAYS", "7"))
-# Сколько страниц вакансий на сайт открывать для чтения описания
-DETAIL_LIMIT_PER_SOURCE = int(os.getenv("DETAIL_LIMIT_PER_SOURCE", "20"))
+# Сколько вакансий с одного сайта читать подробно (открывать страницу); остальные отсекаются по заголовку
+DETAIL_LIMIT_PER_SOURCE = int(os.getenv("DETAIL_LIMIT_PER_SOURCE", "60"))

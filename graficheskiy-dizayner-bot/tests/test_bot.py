@@ -336,6 +336,31 @@ def test_tc06_dedup_helpers():
     assert dedup.title_company_key("Дизайнер", "") is None
 
 
+def test_no_limit_by_default(monkeypatch):
+    monkeypatch.setattr(config, "MAX_VACANCIES", 0)
+    many = [vac(key=f"k:{i}", url=f"https://e.com/{i}", company=f"Компания {i}",
+                description=f"Вакансия номер {i}") for i in range(55)]
+    vs, _ = _collect_with(monkeypatch, {"s": many})
+    assert len(vs) == 55
+    monkeypatch.setattr(config, "MAX_VACANCIES", 10)
+    storage.init()
+    vs, _ = _collect_with(monkeypatch, {"s2": [dict(v, key="z" + v["key"], url=v["url"] + "z",
+                                                     company=v["company"] + "z") for v in many]})
+    assert len(vs) == 10
+
+
+def test_old_max_vacancies_setting_ignored(monkeypatch):
+    import importlib
+    monkeypatch.setenv("MAX_VACANCIES", "40")
+    monkeypatch.delenv("VACANCY_LIMIT", raising=False)
+    cfg = importlib.reload(config)
+    try:
+        assert cfg.MAX_VACANCIES == 0
+    finally:
+        monkeypatch.delenv("MAX_VACANCIES")
+        importlib.reload(config)
+
+
 def test_tc06_old_vacancies_skipped(monkeypatch):
     old = vac(url="https://e.com/old", key="k:old", published=datetime.now(sources.MSK) - timedelta(days=30))
     monkeypatch.setattr(sources, "collect_site", lambda site: [old])
